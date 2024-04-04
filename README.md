@@ -12,7 +12,7 @@ Follow Github Linux Tutorials to connect your computer through SSH and be able t
 
 [Testing your SSH connection](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection)
 
-I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes.
+I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
 
 Useful commands
 
