@@ -4,7 +4,7 @@ Here we will be uploading all the process for the Robotics Implementation projec
 
 Please crate a branch with the name of the functionality on which you will be working (ex. space-recognition)
 
-Follow Github Linux Tutorials to connect your computer through SSH and be able to pull and push changes
+Follow **Github Linux Tutorials** to connect your computer through SSH and be able to pull and push changes
 
 [Generating a new SSH key and adding it to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
@@ -14,7 +14,7 @@ Follow Github Linux Tutorials to connect your computer through SSH and be able t
 
 I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
 
-Useful commands
+You can pull, stage, commit and push changes from the **Source Control** tab on VSCode, but you can also use this commands
 
 Clone the repository from GitHub
 ```
