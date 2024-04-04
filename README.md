@@ -17,7 +17,7 @@ Then clone the repository from GitHub
 git clone <ssh repository link>
 ```
 
-![SSH Link](../docs/images/ssh_link.png)
+![SSH Link](../docs/images/ssh_link.png raw=true)
 
 I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
 
