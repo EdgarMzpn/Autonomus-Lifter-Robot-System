@@ -17,18 +17,20 @@ Then clone the repository from GitHub
 git clone <ssh repository link>
 ```
 
+![SSH Link](../Autonomus-Lifter-Robot-System/docs/images/ssh_link.png)
+
 I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
 
-You can pull, stage, commit and push changes from the **Source Control** tab on VSCode, but you can also use this commands
+You can pull, stage, commit and push changes from the **Source Control** tab on VSCode, but you can also use these commands
 
-Update your local version with the version uploaded to GitHub (strongly recommended before pushing)
+Update your local version with the version uploaded to GitHub (strongly recommended before pushing and creating branches)
 ```
 git pull
 ```
 
 Create the branch of the funcitonality you'll be working on
 ```
-git branch <your new branch>
+git branch <your new branch> <base branch (current branch is default)>
 ```
 
 Go to your branch to start editting
