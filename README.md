@@ -12,14 +12,14 @@ Follow **Github Linux Tutorials** to connect your computer through SSH and be ab
 
 [Testing your SSH connection](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection)
 
-I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
-
-You can pull, stage, commit and push changes from the **Source Control** tab on VSCode, but you can also use this commands
-
-Clone the repository from GitHub
+Then clone the repository from GitHub
 ```
 git clone <ssh repository link>
 ```
+
+I've experimented issues to connect SSH with Tec's network, so I recommend you to connect using a hotspot (For me it worked with the cellphone) just when you clone the repository and or push changes. If you mannage to solve this issue let us know how
+
+You can pull, stage, commit and push changes from the **Source Control** tab on VSCode, but you can also use this commands
 
 Update your local version with the version uploaded to GitHub (strongly recommended before pushing)
 ```
@@ -38,13 +38,17 @@ git checkout <your branch>
 
 Stage your changes for commit
 ```
+#Stage changes on specific files
 git add <changed file>
+#Stage all changes
 git add --all
 ```
 
 Commit your changes (Commit message is mandatory)
 ```
+#Commit staged changes on specific files
 git commit <file> -m "Commit Message"
+#Commit all staged changes
 git commit --all -m "Commit Message"
 ```
 
