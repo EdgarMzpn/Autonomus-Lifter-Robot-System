@@ -4,6 +4,17 @@ Here we will be uploading all the process for the Robotics Implementation projec
 
 Please crate a branch with the name of the functionality on which you will be working (ex. space-recognition)
 
+## Weekly challenges
+
+**Week 1**
+[Single Link Manipulator ](https://github.com/EdgarMzpn/Single-Link-Manipulator) 
+
+**Week 2**
+
+**Week 3**
+
+## Connect to Github thorugh SSH
+
 Follow **Github Linux Tutorials** to connect your computer through SSH and be able to pull and push changes
 
 [Generating a new SSH key and adding it to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
