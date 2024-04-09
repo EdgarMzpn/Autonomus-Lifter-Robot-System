@@ -6,12 +6,8 @@ Please crate a branch with the name of the functionality on which you will be wo
 
 ## Weekly challenges
 
-**Week 1**
+**Pendulum Challenge**
 [Single Link Manipulator ](https://github.com/EdgarMzpn/Single-Link-Manipulator) 
-
-**Week 2**
-
-**Week 3**
 
 ## Connect to Github thorugh SSH
 
