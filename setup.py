@@ -8,12 +8,12 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
+        ('share/' + package_name + '/Week2/launch', glob('launch/*.launch.py')),
         ('share/' + package_name + '/config', glob('config/*')),
         ('share/' + package_name + '/rviz', glob('rviz/*')),
-        ('share/' + package_name + '/urdf', glob('urdf/*')),
+        ('share/' + package_name + '/Week2/urdf', glob('urdf/*')),
        #('share/' + package_name + '/urdf', ['urdf/pendulum.urdf']),
-        ('share/' + package_name + '/models', glob('models/*')),
+        ('share/' + package_name + '/Week2/models', glob('models/*')),
        #('share/' + package_name + '/models', ['models/Arm_2.stl']),
        #('share/' + package_name + '/models', ['models/Base_2.stl']),
         ('share/ament_index/resource_index/packages',
@@ -29,7 +29,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'puzzlebot_rviz = puzzlebot_challenge.puzzlebot_rviz:main'
+            # 'puzzlebot_rviz = puzzlebot_challenge.puzzlebot_rviz:main'
         ],
     },
 )
