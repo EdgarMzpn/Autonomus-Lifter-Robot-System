@@ -23,9 +23,6 @@ class Pose_Sim(Node):
         self.positionx = 0.0
         self.positiony = 0.0
         self.position = Pose()
-
-        self.lastTime = 0.0
-        self.dt = 0.0
         
         # Define the Publishers
         self.wl_pub = self.create_publisher(Float32, "wl", 1)
@@ -38,20 +35,17 @@ class Pose_Sim(Node):
         # Start timer
         self.start_time = self.get_clock().now()
         self.get_logger().info('Testing process')
+        time_period = 0.1 #seconds
+        self.timer = self.create_timer(time_period, self.pose_sim)
 
     def cbCmdVel(self, msg):
         self.linear_speed = msg.linear
         self.angular_speed = msg.angular
 
     def pose_sim(self):
-        # if gazebo sim is restarted
-        if self.start_time <= 1:
-            self.angle = -1.57
-            self.positionx = -0.95
-            self.positiony = 0.75
-            
         #Get time difference
-        dt = self.start_time - lastTime
+        self.duration = self.get_clock().now() - self.start_time
+        self.dt = self.duration.nanoseconds * 1e-9
 
         x_dot = self.linear_speed * np.cos(self.angle)
         y_dot = self.linear_speed * np.sin(self.angle)
@@ -65,13 +59,13 @@ class Pose_Sim(Node):
 
         
         #Calculate angle and wrap to 2pi
-        self.angle += 0.05*((self.wr - self.wl) / 0.19) * dt
+        self.angle += 0.05*((self.wr - self.wl) / 0.19) * self.dt
         self.angle = self.angle % 6.28
         
 
         # Calculate position in x and y
-        self.positionx += 0.05*((self.wr + self.wl) / 2) * dt * np.cos(self.angle)
-        self.positiony += 0.05*((self.wr + self.wl) / 2) * dt * np.sin(self.angle)
+        self.positionx += 0.05*((self.wr + self.wl) / 2) * self.dt * np.cos(self.angle)
+        self.positiony += 0.05*((self.wr + self.wl) / 2) * self.dt * np.sin(self.angle)
         
         #set and publish message 
         self.position.position.x = self.positionx
@@ -82,7 +76,7 @@ class Pose_Sim(Node):
         self.wr_pub.publish(self.wr)
         
         print(self.position)
-        lastTime = self.start_time
+        self.start_time = self.get_clock().now()
 
 def main(args=None):
     rclpy.init(args=args)
