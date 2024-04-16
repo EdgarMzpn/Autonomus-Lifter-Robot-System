@@ -39,10 +39,11 @@ class Pose_Sim(Node):
         self.timer = self.create_timer(time_period, self.pose_sim)
 
     def cbCmdVel(self, msg):
-        self.linear_speed = msg.linear
-        self.angular_speed = msg.angular
+        self.linear_speed = msg.linear.x
+        self.angular_speed = msg.angular.z
 
     def pose_sim(self):
+        
         #Get time difference
         self.duration = self.get_clock().now() - self.start_time
         self.dt = self.duration.nanoseconds * 1e-9
@@ -51,31 +52,33 @@ class Pose_Sim(Node):
         y_dot = self.linear_speed * np.sin(self.angle)
         theta_dot = self.angular_speed
 
-        # Calculate the wheels' individual velocities
 
-        self.wl = ((2 * self.linear_speed) - (self.angular_speed + self.l)) / (2 * self.r)
-        self.wr = (2 * self.linear_speed / self.r) - self.wl
-
-
-        
         #Calculate angle and wrap to 2pi
-        self.angle += 0.05*((self.wr - self.wl) / 0.19) * self.dt
+        self.angle += theta_dot * self.dt
         self.angle = self.angle % 6.28
         
 
         # Calculate position in x and y
-        self.positionx += 0.05*((self.wr + self.wl) / 2) * self.dt * np.cos(self.angle)
-        self.positiony += 0.05*((self.wr + self.wl) / 2) * self.dt * np.sin(self.angle)
+        self.positionx += x_dot * self.dt
+        self.positiony += y_dot * self.dt
+
+        # Calculate the wheels' individual velocities
+
+        if(self.linear_speed != 0.):
+            self.wl = ((2 * self.linear_speed) - (self.angular_speed + self.l)) / (2 * self.r)
+            self.wr = (2 * self.linear_speed / self.r) - self.wl
+        else: 
+            self.wl = 0.
+            self.wr = 0.
+        
         
         #set and publish message 
         self.position.position.x = self.positionx
         self.position.position.y = self.positiony
         self.position.orientation.z = self.angle
         self.pose_pub.publish(self.position)
-        self.wl_pub.publish(self.wl)
-        self.wr_pub.publish(self.wr)
-        
-        print(self.position)
+        self.wl_pub.publish(Float32(data = self.wl))
+        self.wr_pub.publish(Float32(data = self.wr))
         self.start_time = self.get_clock().now()
 
 def main(args=None):
