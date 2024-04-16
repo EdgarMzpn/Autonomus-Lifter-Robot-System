@@ -29,7 +29,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'puzzlebot_kinematics = puzzlebot_challenge.pose_sim:main'
+            'puzzlebot_kinematics = puzzlebot_challenge.pose_sim:main',
+            'odometry = puzzlebot_challenge.localisation:main'
         ],
     },
 )
