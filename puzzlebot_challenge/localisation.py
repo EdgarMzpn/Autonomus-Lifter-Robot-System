@@ -6,6 +6,7 @@ from std_msgs.msg import Float32
 from geometry_msgs.msg import Quaternion
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
+from tf_transformations import quaternion_from_euler
 
 
 class Localisation(Node):
@@ -43,22 +44,6 @@ class Localisation(Node):
     def cbWl(self, msg):
         self.wl = msg.data
 
-    def euler_to_quaternion(self, roll, pitch, yaw):
-        cy = np.cos(yaw * 0.5)
-        sy = np.sin(yaw * 0.5)
-        cp = np.cos(pitch * 0.5)
-        sp = np.sin(pitch * 0.5)
-        cr = np.cos(roll * 0.5)
-        sr = np.sin(roll * 0.5)
-
-        q = Quaternion()
-        q.w = cy * cp * cr + sy * sp * sr
-        q.x = cy * cp * sr - sy * sp * cr
-        q.y = sy * cp * sr + cy * sp * cr
-        q.z = sy * cp * cr - cy * sp * sr
-
-        return q
-
     def odom_reading(self):
 
         #Get time difference 
@@ -73,15 +58,18 @@ class Localisation(Node):
 
         self.angle += self.angular_speed * self.dt
         self.angle = self.angle % 6.28
-        self.positionx += self.linear_speed * np.cos(self.angle)
-        self.positiony += self.linear_speed * np.sin(self.angle)
+        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
+        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
         odom = Odometry()
         odom.header.stamp = self.current_time 
         odom.pose.pose.position.x = self.positionx
         odom.pose.pose.position.y = self.positiony
-        q = self.euler_to_quaternion(0,0,self.angle)
-        odom.pose.pose.orientation = q
+        q = quaternion_from_euler(0., 0., self.angle)
+        odom.pose.pose.orientation.x = q[0]
+        odom.pose.pose.orientation.y = q[1]
+        odom.pose.pose.orientation.z = q[2]
+        odom.pose.pose.orientation.w = q[3]
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
