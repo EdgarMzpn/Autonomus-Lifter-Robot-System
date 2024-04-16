@@ -37,6 +37,7 @@ class Pose_Sim(Node):
 
         # Start timer
         self.start_time = self.get_clock().now()
+        self.get_logger().info('Testing process')
 
     def cbCmdVel(self, msg):
         self.linear_speed = msg.linear
