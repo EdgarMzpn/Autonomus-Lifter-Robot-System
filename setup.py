@@ -29,7 +29,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # 'puzzlebot_rviz = puzzlebot_challenge.puzzlebot_rviz:main'
+            'puzzlebot_kinematics = puzzlebot_challenge.pose_sim:main'
         ],
     },
 )
