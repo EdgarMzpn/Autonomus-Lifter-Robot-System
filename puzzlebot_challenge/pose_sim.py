@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 import numpy as np
 from std_msgs.msg import Float32
-from geometry_msgs.msg import Twist, TwistStamped, Point, Pose
+from geometry_msgs.msg import Twist, Pose
 from std_srvs.srv import Empty
 
 class Pose_Sim(Node):
@@ -48,14 +48,15 @@ class Pose_Sim(Node):
         self.duration = self.get_clock().now() - self.start_time
         self.dt = self.duration.nanoseconds * 1e-9
 
+        #Calculate angle and wrap to 2pi
+        self.angle += self.angular_speed * self.dt
+        self.angle = self.angle % 6.28
+        
         x_dot = self.linear_speed * np.cos(self.angle)
         y_dot = self.linear_speed * np.sin(self.angle)
         theta_dot = self.angular_speed
 
 
-        #Calculate angle and wrap to 2pi
-        self.angle += theta_dot * self.dt
-        self.angle = self.angle % 6.28
         
 
         # Calculate position in x and y
