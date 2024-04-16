@@ -65,9 +65,11 @@ class Pose_Sim(Node):
 
         # Calculate the wheels' individual velocities
 
-        if(self.linear_speed != 0.):
-            self.wl = ((2 * self.linear_speed) - (self.angular_speed + self.l)) / (2 * self.r)
-            self.wr = (2 * self.linear_speed / self.r) - self.wl
+        if(self.linear_speed != 0. or self.angular_speed != 0):
+            self.wl = ((2 * self.linear_speed) - (self.angular_speed * self.l)) / (2 * self.r)
+            # self.wl = ((2 * self.linear_speed) - (self.angular_speed + self.l)) / (2 * self.r)
+            self.wr = ((2 * self.linear_speed) + (self.angular_speed * self.l)) / (2 * self.r)
+            # self.wr = (2 * self.linear_speed / self.r) - self.wl
         else: 
             self.wl = 0.
             self.wr = 0.
