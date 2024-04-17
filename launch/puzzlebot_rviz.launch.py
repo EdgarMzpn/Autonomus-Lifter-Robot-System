@@ -1,50 +1,40 @@
-import launch
-import launch_ros.actions
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import Command
+
 
 def generate_launch_description():
-    # Static transform publisher node
-    static_transform_publisher_node = launch_ros.actions.Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='map_joint',
-        arguments=['odomPose_x', 'odomPose_y', 'odomPose_z', 'odomPose_roll', 'odomPose_pitch', 'odomPose_yaw', 'map', 'odom']
-    )
+    urdf_model_path = get_package_share_directory('puzzlebot_challenge') + '/urdf/puzzlebot_jetson_ed_urdf.urdf'
+    rviz_config_path = get_package_share_directory('puzzlebot_challenge') + '/rviz/manipulator.rviz'
 
-    # Argument for puzzlebot_sim_model
-    puzzlebot_sim_model_arg = launch.actions.DeclareLaunchArgument(
-        name='puzzlebot_sim_model',
-        default_value='$(find localisation)/urdf/puzzlebot_jetson_ed_urdf.urdf',
-        description='Path to the URDF file of the puzzlebot'
-    )
-
-    # Parameter for robot_description
-    robot_description_param = launch_ros.actions.Node(
+    robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='simulated_state_publisher',
         output='screen',
-        parameters=[{'robot_description': launch.substitutions.TextSubstitution([
-            'cat', launch.substitutions.LaunchConfiguration('puzzlebot_sim_model')
-        ])}]
+        parameters=[{'robot_description': open(urdf_model_path).read()}]
     )
 
-    # RViz node
-    rviz_node = launch_ros.actions.Node(
+    rviz_node = Node(
         package='rviz2',
         executable='rviz2',
-        name='rviz',
         output='screen',
-        arguments=['-d', launch.substitutions.LaunchConfiguration('rvizconfig')],
-        parameters=[{'use_sim_time': 'true'}]  # Assuming you want to use simulated time
+        arguments=['-d', rviz_config_path]
     )
 
-    # Create launch description and populate
-    ld = launch.LaunchDescription()
+    tf2_ros = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_joint',
+            arguments=['odomPose_x', 'odomPose_y', 'odomPose_z', 'odomPose_roll', 'odomPose_pitch', 'odomPose_yaw', 'map', 'odom']
+        )
 
-    # Add actions to launch description
-    ld.add_action(static_transform_publisher_node)
-    ld.add_action(puzzlebot_sim_model_arg)
-    ld.add_action(robot_description_param)
-    ld.add_action(rviz_node)
+    return LaunchDescription([
+        robot_state_publisher_node,
+        rviz_node,
+        tf2_ros
+    ])
 
-    return ld
+if __name__ == '__main__':
+    generate_launch_description()
