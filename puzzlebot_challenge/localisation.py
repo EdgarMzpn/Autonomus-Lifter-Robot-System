@@ -14,12 +14,12 @@ class Localisation(Node):
         super().__init__('Odometry')
 
         # Initialize wheel variables
-        self.wr = 0.0
-        self.wl = 0.0
-        self.linear_speed = 0.0
-        self.angular_speed = 0.0
-        self.l = 0.19
-        self.r = 0.05
+        self.wr = 0.0               # Right Wheel
+        self.wl = 0.0               # Left Wheel
+        self.linear_speed = 0.0     # Linear Speed
+        self.angular_speed = 0.0    # Angular Speed
+        self.l = 0.19               # Wheelbase
+        self.r = 0.05               # Radius of the Wheel
         
         # Starting pose for the puzzlebot
         self.angle = 0.0
@@ -33,6 +33,7 @@ class Localisation(Node):
         # Publishers 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
 
+        # Start the timer now
         self.start_time = self.get_clock().now()
         time_period = 0.1
         self.timer = self.create_timer(time_period, self.odom_reading)
@@ -47,9 +48,10 @@ class Localisation(Node):
     def odom_reading(self):
 
         #Get time difference 
-
         self.current_time = self.start_time.to_msg()
         self.duration = self.get_clock().now() - self.start_time
+
+        # Convert the duration to a float value (in seconds)
         self.dt = self.duration.nanoseconds * 1e-9
         
 
@@ -61,6 +63,7 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
+        # Publish odometry via odom topic
         odom = Odometry()
         odom.header.stamp = self.current_time 
         odom.pose.pose.position.x = self.positionx
@@ -74,9 +77,6 @@ class Localisation(Node):
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
         self.start_time = self.get_clock().now()
-
-
-
 
 def main(args=None):
     rclpy.init(args=args)

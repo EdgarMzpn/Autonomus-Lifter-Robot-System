@@ -11,12 +11,12 @@ class Pose_Sim(Node):
     def __init__(self):
         super().__init__('Pose_Sim')
         # Initialize wheel variables
-        self.wl = 0.0
-        self.wr = 0.0
-        self.linear_speed = 0.0
-        self.angular_speed = 0.0
-        self.l = 0.19
-        self.r = 0.05
+        self.wl = 0.0               # Left Wheel
+        self.wr = 0.0               # Right Wheel
+        self.linear_speed = 0.0     # Linear Speed
+        self.angular_speed = 0.0    # Angular Speed
+        self.l = 0.19               # Wheelbase
+        self.r = 0.05               # Radius of the wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
@@ -32,9 +32,8 @@ class Pose_Sim(Node):
         # Define the Subscribers
         self.cmd_vel_sub = self.create_subscription(Twist, 'cmd_vel', self.cbCmdVel, 10)
 
-        # Start timer
+        # Get the current time
         self.start_time = self.get_clock().now()
-        self.get_logger().info('Testing process')
         time_period = 0.1 #seconds
         self.timer = self.create_timer(time_period, self.pose_sim)
 
@@ -46,6 +45,8 @@ class Pose_Sim(Node):
         
         #Get time difference
         self.duration = self.get_clock().now() - self.start_time
+        
+        # Convert the duration to a float value (in seconds)
         self.dt = self.duration.nanoseconds * 1e-9
 
         #Calculate angle and wrap to 2pi
@@ -56,20 +57,14 @@ class Pose_Sim(Node):
         y_dot = self.linear_speed * np.sin(self.angle)
         theta_dot = self.angular_speed
 
-
-        
-
         # Calculate position in x and y
         self.positionx += x_dot * self.dt
         self.positiony += y_dot * self.dt
 
         # Calculate the wheels' individual velocities
-
         if(self.linear_speed != 0. or self.angular_speed != 0):
             self.wl = ((2 * self.linear_speed) - (self.angular_speed * self.l)) / (2 * self.r)
-            # self.wl = ((2 * self.linear_speed) - (self.angular_speed + self.l)) / (2 * self.r)
             self.wr = ((2 * self.linear_speed) + (self.angular_speed * self.l)) / (2 * self.r)
-            # self.wr = (2 * self.linear_speed / self.r) - self.wl
         else: 
             self.wl = 0.
             self.wr = 0.
