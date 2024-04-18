@@ -29,11 +29,33 @@ def generate_launch_description():
             name='map_joint',
             arguments=['odomPose_x', 'odomPose_y', 'odomPose_z', 'odomPose_roll', 'odomPose_pitch', 'odomPose_yaw', 'map', 'odom']
         )
+    
+    pose_sim = Node(
+            package='puzzlebot_challenge',
+            executable='puzzlebot_kinematics',
+            name='puzzlebot_kinematics'
+    )
+
+    localisation = Node(
+            package = 'puzzlebot_challenge',
+            executable = 'odometry',
+            name = 'localisation'
+    )
+
+    joint_state = Node(
+            package='puzzlebot_challenge',
+            executable='joint_state_publisher',
+            name='joint_state_publisher'
+    )
+
 
     return LaunchDescription([
         robot_state_publisher_node,
         rviz_node,
-        tf2_ros
+        tf2_ros,
+        pose_sim, 
+        localisation,
+        joint_state
     ])
 
 if __name__ == '__main__':
