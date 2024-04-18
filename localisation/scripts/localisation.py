@@ -1,91 +1,86 @@
 #!/usr/bin/env python
-
 import rospy
 import numpy as np
-from std_msgs.msg import Float32, Header
-from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Quaternion
+from nav_msgs.msg import Odometry
+from std_msgs.msg import Float32
+from std_srvs.srv import Empty
+from tf.transformations import quaternion_from_euler
 
-# Declare Variables to be used
-k = 0.01
-m = 0.75
-l = 0.36
-a = l/2
-g = 9.8
-J = 4/3 * (m * a**2)
-Tau = 0.0
-x1 = 0.0
-x2 = 0.0
-dt = 0.0
 
-# Callback functions
-def callbackTau(msg):
-    global Tau
-    Tau = msg.data
+class localisation:
+    def __init__(self):
+        # Initialize wheel variables
+        self.wr = 0.0
+        self.wl = 0.0
+        self.linear_speed = 0.0
+        self.angular_speed = 0.0
+        self.l = 0.19
+        self.r = 0.05
+        
+        # Starting pose for the puzzlebot
+        self.angle = 0.0
+        self.positionx = 0.0
+        self.positiony = 0.0
+        
+        # Subscribers
+        self.wl_sub = rospy.Subscriber('wl', Float32, self.cbWl)
+        self.wr_sub = rospy.Subscriber('wr', Float32, self.cbWr)
 
-# Wrap to pi function
-def wrap_to_Pi(theta):
-    result = np.fmod((theta + np.pi),(2 * np.pi))
-    if(result < 0):
-        result += 2 * np.pi
-    return result - np.pi
+        # Publishers 
+        self.odom_pub = rospy.Publisher('odom', Odometry, queue_size = 10)
 
-# Utilities
-def printValues():
-    print("====================================")
-    if x1 > 0:
-        print("x1 =  ", x1)
-    else:
-        print("x1 = ", x1)
+        self.start_time = rospy.get_time()
+        time_period = 0.1
 
-    if x2 > 0:
-        print("x2 =  ", x2)
-    else:
-        print("x2 = ", x2)
 
-if __name__=='__main__':
-    # Initialise and Setup node
-    rospy.init_node("SLM_Sim")
+    def cbWr(self, msg):
+        self.wr = msg.data
 
-    # Configure the Node
-    loop_rate = rospy.Rate(rospy.get_param("~node_rate",100))
+    def cbWl(self, msg):
+        self.wl = msg.data
 
-    # Setup the Subscribers 
-    tau_sub = rospy.Subscriber("tau", Float32, callbackTau)
-    tau_pub = rospy.Publisher("tau", Float32, queue_size = 10)
-    arm_pub = rospy.Publisher("joint_states", JointState, queue_size = 10)
+    def odom_reading(self):
+        #Get time difference 
 
-    position = JointState()
-    header = Header()
+        self.current_time = self.start_time.to_msg()
+        self.duration = rospy.get_time() - self.start_time
+        self.dt = self.duration.nanoseconds * 1e-9
+        
 
-    print("The SLM sim is Running")
-    start_time = rospy.get_time()
+        self.linear_speed = self.r * (self.wr + self.wl) / 2.
+        self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-    try:
-        while(1):
-            dt = rospy.get_time() - start_time
+        self.angle += self.angular_speed * self.dt
+        self.angle = self.angle % 6.28
+        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
+        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
-            # SLM governing equation
-            x1 += x2*dt
+        odom = Odometry()
+        odom.header.stamp = self.current_time 
+        odom.pose.pose.position.x = self.positionx
+        odom.pose.pose.position.y = self.positiony
+        q = quaternion_from_euler(0., 0., self.angle)
+        odom.pose.pose.orientation.x = q[0]
+        odom.pose.pose.orientation.y = q[1]
+        odom.pose.pose.orientation.z = q[2]
+        odom.pose.pose.orientation.w = q[3]
+        odom.twist.twist.linear.x = self.linear_speed
+        odom.twist.twist.angular.z = self.angular_speed
+        self.odom_pub.publish(odom)
+        self.start_time = rospy.get_time()
 
-            x2_dot = (1/(J+m*a**2)) * (-m*g*a*np.cos(x1) - k*x2 + Tau)
-            x2 += x2_dot*dt
-            
-            printValues()
 
-            # After publishing Tau input, reset to 0
-            if Tau > 0:
-                tau_pub.publish(0)
+def main(args=None):
+    rospy.init_node("localisation")
+    odometry = localisation()
+    rate = rospy.Rate(100)
 
-            position.header.stamp = rospy.Time.now()
-            position.name = ["joint2"]
-            position.position = [x1]
-            position.velocity = [x2]
-            arm_pub.publish(position)
-            
-            start_time = rospy.get_time()
+    rospy.on_shutdown(odometry.stop)
 
-            # Wait and repeat
-            loop_rate.sleep()
-    
-    except rospy.ROSInterruptException:
-        pass # Initialise and Setup node
+    while not rospy.is_shutdown():
+        odometry.odom_reading()
+        rate.sleep()
+
+if __name__ == "__main__":
+    main()
