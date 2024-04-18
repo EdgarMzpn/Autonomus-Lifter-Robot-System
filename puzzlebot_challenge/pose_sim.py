@@ -84,7 +84,7 @@ def main(args=None):
     pose_sim = Pose_Sim()
     rclpy.spin(pose_sim)
     pose_sim.destroy_node()
-    rclpy.shutdown
+    rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
