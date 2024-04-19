@@ -1,4 +1,4 @@
-?xml version="1.0"?>
+<?xml version="1.0"?>
 <robot name="PuzzleBot">
   <!-- Base link -->
   <link name="base_link">
