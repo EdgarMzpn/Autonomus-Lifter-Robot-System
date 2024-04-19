@@ -43,8 +43,8 @@ class localisation:
     def odom_reading(self):
         #Get time difference 
 
-        self.current_time = self.start_time.to_msg()
-        self.duration = rospy.get_time() - self.start_time
+        self.current_time = self.rospy.get_time()
+        self.duration = self.current_time - self.start_time
         self.dt = self.duration.nanoseconds * 1e-9
         
 
@@ -68,19 +68,15 @@ class localisation:
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
-        self.start_time = rospy.get_time()
+        self.start_time = self.current_time
 
 
 def main(args=None):
     rospy.init_node("localisation")
     odometry = localisation()
     rate = rospy.Rate(100)
+    rospy.spin()
 
-    rospy.on_shutdown(odometry.stop)
-
-    while not rospy.is_shutdown():
-        odometry.odom_reading()
-        rate.sleep()
 
 if __name__ == "__main__":
     main()
