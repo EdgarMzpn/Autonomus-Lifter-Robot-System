@@ -8,7 +8,6 @@ from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
 
-
 class Localisation(Node):
     def __init__(self):
         super().__init__('Odometry')
@@ -53,7 +52,6 @@ class Localisation(Node):
 
         # Convert the duration to a float value (in seconds)
         self.dt = self.duration.nanoseconds * 1e-9
-        
 
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
