@@ -48,6 +48,12 @@ def generate_launch_description():
             name='joint_state_publisher'
     )
 
+    controller = Node(
+            package='puzzlebot_challenge',
+            executable='velocity_control',
+            name='velocity_control'
+    )
+
 
     return LaunchDescription([
         robot_state_publisher_node,
@@ -55,7 +61,8 @@ def generate_launch_description():
         tf2_ros,
         pose_sim, 
         localisation,
-        joint_state
+        joint_state, 
+        controller
     ])
 
 if __name__ == '__main__':

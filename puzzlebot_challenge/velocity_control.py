@@ -3,7 +3,7 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from std_msgs.msg import Float32
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, Point
 from nav_msgs.msg import Odometry
 from tf_transformations import euler_from_quaternion
 from geometry_msgs.msg import Twist
@@ -31,17 +31,25 @@ class Velocity_Control(Node):
         self.output_velocity = Twist()
 
         # Initialize PID controller parameters
-        self.kp = 0.0
-        self.ki = 0.0
-        self.kd = 0.0
-        self.integral = 0.0
-        self.prev_error = 0.0
+        self.linear_kp = 0.15
+        self.linear_ki = 0.0
+        self.linear_kd = 0.05
+        self.linear_integral = 0.0
+
+        self.angular_kp = 0.48
+        self.angular_ki = 0.0
+        self.angular_kd = 0.02
+        self.angular_integral = 0.0
+
+        self.output_error = Point()
+
         
         # Publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 1)
+        self.error_pub = self.create_publisher(Point, 'error', 1)
 
         # Subscribers
-        self.pose_sub = self.create_subscription(Pose, 'pose', self.cbPose, 10)
+        self.pose_sub = self.create_subscription(Pose, 'ideal', self.cbPose, 10)
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.cbOdom, 10)
 
         # Start the timer now
@@ -59,20 +67,37 @@ class Velocity_Control(Node):
         self.current_position_y = msg.pose.pose.position.y
 
         # Get current angle from quaternion
-        quaternion = self.msg.pose.pose.orientation
-        self.current_angle = euler_from_quaternion(quaternion)[2]
+        quaternion = msg.pose.pose.orientation
+        self.current_angle = euler_from_quaternion([quaternion.x, quaternion.y, quaternion.z, quaternion.w])[2]
 
-    def PID(self, error, prev_error):
+    def PID_Linear(self, error, prev_error):
         # Proportional term
-        P = self.kp * error
+        P = self.linear_kp * error
         
         # Integral term
-        self.integral += error
-        I = self.ki * self.integral
+        self.linear_integral += error
+        I = self.linear_ki * self.linear_integral
         
         # Derivative term
         derivative = error - prev_error
-        D = self.kd * derivative
+        D = self.linear_kd * derivative
+        
+        # Compute PID output
+        output = P + I + D
+        
+        return output, error
+    
+    def PID_Angular(self, error, prev_error):
+        # Proportional term
+        P = self.angular_kp * error
+        
+        # Integral term
+        self.angular_integral += error
+        I = self.angular_ki * self.angular_integral
+        
+        # Derivative term
+        derivative = error - prev_error
+        D = self.angular_kd * derivative
         
         # Compute PID output
         output = P + I + D
@@ -83,9 +108,12 @@ class Velocity_Control(Node):
         x_error = self.desired_position_x - self.current_position_x
         y_error = self.desired_position_y - self.current_position_y
 
-        self.total_position_error = np.sqrt(x_error, y_error)
+        self.total_position_error = np.sqrt(x_error**2 + y_error**2)
 
-        self.angle_error = np.arctan2(y_error, x_error)
+        desired_angle = np.arctan2(y_error, x_error)
+        self.angle_error = desired_angle - self.current_angle
+
+        self.get_logger().info("Desired: %d, Current: %s" % (desired_angle, self.current_angle))
 
     def velocity_control(self):
         #Get time difference 
@@ -99,13 +127,21 @@ class Velocity_Control(Node):
         self.resultant_error()
 
         # Adjust current pose
-        self.output_position, self.prev_position_error = self.PID(self.total_position_error, self.prev_position_error)
-        self.output_angle, self.prev_angle_error = self.PID(self.angle_error, self.prev_angle_error)
+        self.output_position, self.prev_position_error = self.PID_Linear(self.total_position_error, self.prev_position_error)
+        self.output_angle, self.prev_angle_error = self.PID_Angular(self.angle_error, self.prev_angle_error)
+        
+        if abs(self.prev_angle_error) > 0.1:
+            self.output_velocity.angular.z = self.output_angle
+            self.output_velocity.linear.x = 0.0
+        else:
+            self.output_velocity.linear.x = self.output_position
+            self.output_velocity.angular.z = 0.0
 
-        self.output_velocity.linear.x = self.output_position
-        self.output_velocity.angular.z = self.output_angle
+        self.output_error.x = self.total_position_error
+        self.output_error.y = self.prev_angle_error
 
         self.cmd_vel_pub.publish(self.output_velocity)
+        self.error_pub.publish(self.output_error)
 
 def main(args=None):
     rclpy.init(args=args)
