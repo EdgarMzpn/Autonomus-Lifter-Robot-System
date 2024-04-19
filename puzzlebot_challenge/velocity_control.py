@@ -10,7 +10,7 @@ from geometry_msgs.msg import Twist
 
 class Velocity_Control(Node):
     def __init__(self):
-        super().__init__('Velocity Control')
+        super().__init__('Velocity_Control')
         # Initialize puzzlebot variables
         self.desired_position_x = 0.0
         self.desired_position_y = 0.0
@@ -59,7 +59,7 @@ class Velocity_Control(Node):
         self.current_position_y = msg.pose.pose.position.y
 
         # Get current angle from quaternion
-        quaternion = self.odometry.pose.pose.orientation
+        quaternion = self.msg.pose.pose.orientation
         self.current_angle = euler_from_quaternion(quaternion)[2]
 
     def PID(self, error, prev_error):
