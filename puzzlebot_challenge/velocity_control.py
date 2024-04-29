@@ -113,8 +113,6 @@ class Velocity_Control(Node):
         desired_angle = np.arctan2(y_error, x_error)
         self.angle_error = desired_angle - self.current_angle
 
-        self.get_logger().info("Desired: %d, Current: %s" % (desired_angle, self.current_angle))
-
     def velocity_control(self):
         #Get time difference 
         self.current_time = self.start_time.to_msg()
