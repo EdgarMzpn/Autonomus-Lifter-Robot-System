@@ -1,8 +1,0 @@
-process[map_joint-1]: started with pid [25583]
-process[simulated_state_publisher-2]: started with pid [25584]
-process[rviz-3]: started with pid [25585]
-[ERROR] [1713227691.787927053]: Failed to find root link: Two root links found: [base_link] and [lidar]
-QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
-[simulated_state_publisher-2] process has died [pid 25584, exit code 1, cmd /opt/ros/noetic/lib/robot_state_publisher/robot_state_publisher __name:=simulated_state_publisher __log:=/root/.ros/log/8b7400e6-fb87-11ee-85fe-0242ac110002/simulated_state_publisher-2.log].
-log file: /root/.ros/log/8b7400e6-fb87-11ee-85fe-0242ac110002/simulated_state_publisher-2*.log
-[ERROR] [1713227692.255302016]: Failed to find root link: Two root links found: [base_link] and [lidar]
