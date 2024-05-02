@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>localisation</name>
+  <name>puzzlebot_challenge</name>
   <version>0.0.0</version>
-  <description>The localisation package</description>
+  <description>The puzzlebot package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
