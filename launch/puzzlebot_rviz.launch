@@ -3,12 +3,17 @@
 
         <node pkg="tf2_ros" type="static_transform_publisher" name="map_joint" args="odomPose_x  odomPose_y  odomPose_z  odomPose_roll  odomPose_pitch  odomPose_yaw   map   odom"/>
 
-        <arg name="puzzlebot_sim_model" default="$(find localisation)/urdf/puzzlebot_jetson_ed_urdf.urdf"/>
+        <arg name="puzzlebot_sim_model" default="$(find puzzlebot_challenge)/urdf/puzzlebot_jetson_ed_urdf.urdf"/>
         <param name="robot_description" command="cat $(arg puzzlebot_sim_model)" />
 
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="simulated_state_publisher" output="screen"/>
 
-        <arg name="rvizconfig" default="$(find localisation)/rviz/manipulator.rviz" />
+        <arg name="rvizconfig" default="$(find puzzlebot_challenge)/rviz/manipulator.rviz" />
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" /> 
+
+        <node pkg="puzzlebot_challenge" type="joint_state_pub.py" name="joint_state_publisher" output="screen"/>
+        <node pkg="puzzlebot_challenge" type="localisation.py" name="localisation" output="screen"/>
+        <node pkg="puzzlebot_challenge" type="pose_sim.py" name="pose_sim" output="screen"/>
+        <node pkg="puzzlebot_challenge" type="velocity_control.py" name="velocity_control" output="screen"/>
 
 </launch>

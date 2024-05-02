@@ -16,13 +16,13 @@
   <visual>
     <origin rpy="1.5708 0 1.5708" xyz="0 0 0.05" /> <!-- Rotación de 90 grados y desplazamiento de 5 cm hacia arriba -->
     <geometry>
-      <mesh filename="package://localisation/models/MCR2_1000_13_Chassis.stl"/>
+      <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
     </geometry>
   </visual>
   <collision>
     <origin rpy="1.5708 0 1.5708" xyz="0 0 0.05" /> <!-- Rotación de 90 grados y desplazamiento de 5 cm hacia arriba -->
     <geometry>
-      <mesh filename="package://localisation/models/MCR2_1000_13_Chassis.stl"/>
+      <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
     </geometry>
   </collision>
 </link>
@@ -34,7 +34,7 @@
   <visual>
     <origin rpy="0 1.5708 -1.5708" xyz="0.05 0.085 0.05" /> <!-- Rotación de 90 grados y desplazamiento de 5 cm hacia arriba -->
     <geometry>
-      <mesh filename="package://localisation/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
+      <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
     </geometry>
   </visual>
 </link>
@@ -44,7 +44,7 @@
   <visual>
     <origin rpy="0 -1.5708 -1.5708" xyz="0.05 -0.085 0.05" /> <!-- Rotación de 90 grados y desplazamiento de 5 cm hacia arriba -->
     <geometry>
-      <mesh filename="package://localisation/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
+      <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
     </geometry>
   </visual>
 </link>

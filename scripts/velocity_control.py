@@ -111,7 +111,6 @@ class VelocityControl(object):
         desired_angle = np.arctan2(y_error, x_error)
         self.angle_error = desired_angle - self.current_angle
 
-        rospy.loginfo("Desired: %d, Current: %s" % (desired_angle, self.current_angle))
 
     def velocity_control(self, event):
         # Get time difference
