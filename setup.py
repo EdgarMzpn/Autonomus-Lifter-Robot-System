@@ -29,7 +29,9 @@ setup(
             'puzzlebot_kinematics = puzzlebot_challenge.pose_sim:main',
             'odometry = puzzlebot_challenge.localisation:main',
             'joint_state_publisher = puzzlebot_challenge.JointStatePublisher:main',
-            'velocity_control = puzzlebot_challenge.velocity_control:main'
+            'velocity_control = puzzlebot_challenge.velocity_control:main',
+            'image_stream = puzzlebot_challenge.image_stream:main',
+            'qr_code = puzzlebot_challenge.qr_identification:main'
         ],
     },
 )

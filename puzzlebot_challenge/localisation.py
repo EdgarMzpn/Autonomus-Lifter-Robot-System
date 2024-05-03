@@ -35,7 +35,7 @@ class Localisation(Node):
         # Start the timer now
         self.start_time = self.get_clock().now()
         time_period = 0.1
-        self.timer = self.create_timer(time_period, self.odom_reading)
+        self.timer = self.create_timer(time_period, self.odom_linear_model)
 
 
     def cbWr(self, msg):
@@ -75,6 +75,39 @@ class Localisation(Node):
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
         self.start_time = self.get_clock().now()
+
+    def odom_linear_model(self):
+        #Get time difference 
+        self.current_time = self.start_time.to_msg()
+        self.duration = self.get_clock().now() - self.start_time
+
+        # Convert the duration to a float value (in seconds)
+        self.dt = self.duration.nanoseconds * 1e-9
+
+        self.linear_speed = self.r * (self.wr + self.wl) / 2.
+        self.angular_speed = self.r * (self.wr - self.wl) / self.l
+
+        self.angle += self.angular_speed * self.dt
+        self.angle = self.angle % 6.28
+        self.positionx += ((-self.linear_speed * np.sin(self.angle) * self.angle) - (self.linear_speed * np.cos(self.angle))) * self.dt
+        self.positiony += ((self.linear_speed * np.cos(self.angle) * self.angle) + (self.linear_speed * np.sin(self.angle))) * self.dt
+
+        # Publish odometry via odom topic
+        odom = Odometry()
+        odom.header.stamp = self.current_time 
+        odom.pose.pose.position.x = self.positionx
+        odom.pose.pose.position.y = self.positiony
+        q = quaternion_from_euler(0., 0., self.angle)
+        odom.pose.pose.orientation.x = q[0]
+        odom.pose.pose.orientation.y = q[1]
+        odom.pose.pose.orientation.z = q[2]
+        odom.pose.pose.orientation.w = q[3]
+        odom.twist.twist.linear.x = self.linear_speed
+        odom.twist.twist.angular.z = self.angular_speed
+        self.odom_pub.publish(odom)
+        self.start_time = self.get_clock().now()
+
+
 
 def main(args=None):
     rclpy.init(args=args)
