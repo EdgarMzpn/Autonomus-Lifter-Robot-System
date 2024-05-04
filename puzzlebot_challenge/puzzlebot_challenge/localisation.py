@@ -35,7 +35,7 @@ class Localisation(Node):
         # Start the timer now
         self.start_time = self.get_clock().now()
         time_period = 0.1
-        self.timer = self.create_timer(time_period, self.odom_linear_model)
+        self.timer = self.create_timer(time_period, self.odom_reading)
 
 
     def cbWr(self, msg):
