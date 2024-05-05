@@ -12,7 +12,8 @@ configurable_parameters = [{'name': 'serial_port',      'default': '/dev/ttyUSB0
                            {'name': 'frame_id',         'default': 'laser',            'description':"'Specifying frame_id of lidar'"},
                            {'name': 'inverted',         'default': 'false',            'description':"'Specifying whether or not to invert scan data'"},
                            {'name': 'angle_compensate', 'default': 'true',             'description':"'Specifying whether or not to enable angle_compensate of scan data'"},
-                           {'name': 'scan_mode',        'default': 'Boost',            'description':"''"}, # Check if this is supported
+                           {'name': 'scan_mode',        'default': 'Express',            'description':"''"}, # Check if this is supported
+                           {'name': 'channel_type',     'default': 'serial',           'description':"Specifying channel type of lidar"},
                            ]
 
 # lidar supported modes

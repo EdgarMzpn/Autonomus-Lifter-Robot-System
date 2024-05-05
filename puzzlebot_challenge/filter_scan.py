@@ -15,9 +15,8 @@ class ScanFilter(Node):
 		# Initialize a ROS node named scan_filter
 		super().__init__('scan_filter')
 
-		# Set up a publisher that will publish on a topic called "filtered_scan",
-		# with a LaserScan message type
-		self.pub = self.create_publisher(LaserScan, '/filtered_scan', 10) #/stretch_diff_drive_controller/cmd_vel for gazebo
+		# Set up a publisher that will publish on a topic called "filtered_scan" with a LaserScan message type
+		self.pub = self.create_publisher(LaserScan, '/filtered_scan', 10)
 
 		# Set up a subscriber.  We're going to subscribe to the topic "scan",
 		# looking for LaserScan messages.  When a message comes in, ROS is going

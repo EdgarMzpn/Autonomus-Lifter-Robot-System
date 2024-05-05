@@ -12,7 +12,6 @@
   <depend>diagnostic_msgs</depend>
   <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
-  <depend>hello_helpers</depend>
   <depend>nav_msgs</depend>
   <depend>python-transforms3d-pip</depend>
   <depend>trajectory_msgs</depend>
