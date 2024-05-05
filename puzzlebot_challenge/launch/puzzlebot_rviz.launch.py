@@ -59,7 +59,7 @@ def generate_launch_description():
         robot_state_publisher_node,
         rviz_node,
         tf2_ros,
-        pose_sim, 
+        # pose_sim, 
         localisation,
         joint_state, 
         controller

@@ -26,8 +26,10 @@ class Localisation(Node):
         self.positiony = 0.0
         
         # Subscribers
-        self.wl_sub = self.create_subscription(Float32, 'wl', self.cbWl, 1)
-        self.wr_sub = self.create_subscription(Float32, 'wr', self.cbWr, 1)
+        self.wl_sub = self.create_subscription(Float32, 'VelocityEncL', self.cbWl,
+        rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
+        self.wr_sub = self.create_subscription(Float32, 'VelocityEncR', self.cbWr,
+        rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
 
         # Publishers 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
