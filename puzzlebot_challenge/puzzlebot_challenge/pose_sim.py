@@ -25,8 +25,8 @@ class Pose_Sim(Node):
         self.position = Pose()
         
         # Define the Publishers
-        self.wl_pub = self.create_publisher(Float32, "wl", 1)
-        self.wr_pub = self.create_publisher(Float32, "wr", 1)
+        self.wl_pub = self.create_publisher(Float32, "VelocityEncL", 1)
+        self.wr_pub = self.create_publisher(Float32, "VelocityEncR", 1)
         self.pose_pub = self.create_publisher(Pose, 'pose', 1)
 
         # Define the Subscribers

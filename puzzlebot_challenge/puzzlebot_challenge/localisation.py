@@ -26,9 +26,9 @@ class Localisation(Node):
         self.positiony = 0.0
         
         # Subscribers
-        self.wl_sub = self.create_subscription(Float32, 'VelocityEncL', self.cbWl,
+        self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWr,         
         rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
-        self.wr_sub = self.create_subscription(Float32, 'VelocityEncR', self.cbWr,
+        self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWl,
         rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
 
         # Publishers 

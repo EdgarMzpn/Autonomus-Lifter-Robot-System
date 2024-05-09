@@ -27,7 +27,7 @@ class QRCodeTracker(Node):
         self.width = cv_image.shape[1]
         qr_codes = decode(cv_image)
         if qr_codes:
-            for qr_code in qr_codes:
+            for i, qr_code in enumerate(qr_codes):
                 data = qr_code.data.decode('utf-8')
                 (x, y, w, h) = qr_code.rect
                 focal_length_pixels = self.focal_length_mm * (self.image_width_pixels / self.sensor_width_mm)
