@@ -32,7 +32,7 @@ setup(
             'joint_state_publisher = puzzlebot_challenge.JointStatePublisher:main',
             'velocity_control = puzzlebot_challenge.velocity_control:main',
             'image_stream = puzzlebot_challenge.image_stream:main',
-            'qr_code = puzzlebot_challenge.qr_identification:main'
+            'aruco = puzzlebot_challenge.aruco_identification:main'
         ],
     },
 )
