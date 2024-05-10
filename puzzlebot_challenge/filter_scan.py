@@ -37,7 +37,8 @@ class ScanFilter(Node):
 		angles = linspace(msg.angle_min, msg.angle_max, len(msg.ranges))
 
 		# Work out the y coordinates of the ranges
-		points = [r * sin(theta) if (theta < -2.5 or theta > 2.5) else inf for r,theta in zip(msg.ranges, angles)]
+		# points = [r * sin(theta) if (theta < -2.5 or theta > 2.5) else inf for r,theta in zip(msg.ranges, angles)]
+		points = [r * sin(theta) if (theta < -2.0 or theta > 2.0) else inf for r,theta in zip(msg.ranges, angles)]
 
 		# If we're close to the x axis, keep the range, otherwise use inf, which means "no return"
 		new_ranges = [r if abs(y) < self.extent else inf for r,y in zip(msg.ranges, points)]
@@ -45,6 +46,11 @@ class ScanFilter(Node):
 		# Substitute in the new ranges in the original message, and republish it
 		msg.ranges = new_ranges
 		self.pub.publish(msg)
+		# Find minimum and maximum range values
+		min_range = min(msg.ranges)
+		max_range = max(msg.ranges)
+
+		self.get_logger().info("Minimum range: {} meters, Maximum range: {} meters".format(min_range, max_range))
 
 
 def main(args=None):
