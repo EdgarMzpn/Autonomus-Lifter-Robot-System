@@ -54,6 +54,12 @@ def generate_launch_description():
             name='velocity_control'
     )
 
+    trayectory = Node(
+        package='puzzlebot_challenge',
+        executable='trayectory_control.py',
+        name='trayectory_control'
+    )
+
 
     return LaunchDescription([
         robot_state_publisher_node,
@@ -62,7 +68,8 @@ def generate_launch_description():
         # pose_sim, 
         localisation,
         joint_state, 
-        controller
+        controller,
+        trayectory
     ])
 
 if __name__ == '__main__':

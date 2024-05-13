@@ -55,6 +55,25 @@
     </visual>
   </link>
 
+  <!-- Nueva pieza -->
+  <link name="nueva_pieza">
+    <visual>
+      <origin xyz="1 0 0"/> <!-- Colócalo a 1 metro enfrente -->
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
+      </geometry>
+      <material name="white"> <!-- Color blanco -->
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="1 0 0"/> <!-- Colócalo a 1 metro enfrente -->
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
   <!-- Joints -->
   <joint name="chassis_joint" type="fixed">
     <parent link="base_link"/>
@@ -74,5 +93,12 @@
     <child link="wheel_coupler_2"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0" rpy="0 0 0" />
+  </joint>
+
+  <!-- Nueva articulación -->
+  <joint name="nueva_pieza_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="nueva_pieza"/>
+    <origin xyz="1 0 0" rpy="0 0 0"/> <!-- Asegúrate de colocarla en la posición correcta -->
   </joint>
 </robot>

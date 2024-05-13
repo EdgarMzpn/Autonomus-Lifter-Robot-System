@@ -1,6 +1,6 @@
 import rclpy
 from geometry_msgs.msg import Pose, Twist
-from rclpy.node import Node, Float32
+from rclpy.node import Node
 from nav_msgs.msg import Odometry
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,6 +19,7 @@ class TrayectoryControl(Node):
         self.trajectory = np.array([[0, 0]])  # Inicia en el origen
         self.landmarks = []  # Lista de landmarks (puntos de referencia) en el mapa
         self.distances = []  # Lista de la distancia a los puntos devueltos por el lidar
+        self.angular_velocity = 0
 
     def odometry_callback(self, msg):
         # Obtener la posición y la orientación del mensaje de odometría
@@ -35,7 +36,7 @@ class TrayectoryControl(Node):
         # Actualizar el mapa (en este caso, solo se agregan puntos de referencia en ciertos pasos)
         if len(self.trajectory) == 20:
             self.landmarks.append(self.trajectory[-1])
-            self.trayectory = []
+            self.trajectory = []
 
     def lidar_callback(self, msg):
         self.distances = msg
@@ -55,7 +56,8 @@ class TrayectoryControl(Node):
             self.trajectory = np.vstack([self.trajectory, [new_x, new_y]])
     
     def avoid_obstacle(self):
-        if (self.distances[0] < self.distance_treshold and self.distances[-1] < self.distance_treshold) or self.trajectory[-1] in self.landmarks:
+        distance_threshold = 0.1
+        if (self.distances[0] < distance_threshold and self.distances[-1] < distance_threshold) or (self.trajectory[-1] in self.landmarks):
             self.new_pose.orientation.z = self.orientation + np.pi / 2
  
     def plot_map(self):
@@ -73,13 +75,13 @@ class TrayectoryControl(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    slam_node = TrayectoryControl()
+    trayectory_control_node = TrayectoryControl()
 
-    rclpy.spin(slam_node)
+    rclpy.spin(trayectory_control_node)
 
-    slam_node.plot_map()
+    trayectory_control_node.plot_map()
 
-    slam_node.destroy_node()
+    trayectory_control_node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
