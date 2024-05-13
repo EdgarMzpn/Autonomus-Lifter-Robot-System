@@ -20,7 +20,7 @@ if [ ! -d /opt/ros/humble ]; then
 
     # Install ROS 2 Humble
     sudo apt install ros-humble-desktop
-    
+
     # Source ROS 2 setup file
     source /opt/ros/humble/setup.bash
     echo "ROS 2 Humble installed."
@@ -29,7 +29,7 @@ else
 fi
 
 # Create a ROS 2 workspace
-if [ ! -d ~/ros2_workspace ]; then
+if [ ! -d ~/ros2_ws ]; then
     echo "Creating ROS 2 workspace..."
     source /opt/ros/humble/setup.bash
     mkdir -p ~/ros2_ws/src
