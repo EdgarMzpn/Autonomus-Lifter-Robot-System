@@ -36,6 +36,9 @@ fi
 echo "Installing tf transformations"
 sudo apt update && sudo apt install ros-humble-tf-transformations
 echo "ROS tf transformations installed."
+echo "Installing transforms3d"
+pip install transforms3d
+echo "Installation complete"
 
 # Add more library installation steps here as needed
 # Gazebo Installation
