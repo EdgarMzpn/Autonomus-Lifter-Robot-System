@@ -3,13 +3,24 @@
 # Check if ROS 2 Humble is already installed
 if [ ! -d /opt/ros/humble ]; then
     echo "Installing ROS 2 Humble..."
-    # Add ROS 2 apt repository
-    sudo sh -c 'echo "deb [arch=amd64,arm64] http://packages.ros.org/ros2/ubuntu focal main" > /etc/apt/sources.list.d/ros2-latest.list'
-    # Set up keys
-    sudo apt update && sudo apt install curl gnupg2 lsb-release
-    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+    # Setup the Resources
+    # Ensure that the Ubuntu Universe repository is enabled
+    sudo apt install software-properties-common
+    sudo add-apt-repository universe
+    
+    # Now add the ROS2 GPG key with apt
+    sudo apt update && sudo apt install curl -y
+    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+    # Add the repository to the sources list
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+    
+    #Installing the ROS 2 packages
+    sudo apt update
+    sudo apt upgrade
+
     # Install ROS 2 Humble
-    sudo apt update && sudo apt install ros-humble-desktop
+    sudo apt install ros-humble-desktop
+    
     # Source ROS 2 setup file
     source /opt/ros/humble/setup.bash
     echo "ROS 2 Humble installed."
