@@ -1,0 +1,4 @@
+#Directories to ignore
+build/
+install/
+log/
