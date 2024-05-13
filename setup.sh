@@ -20,9 +20,12 @@ fi
 # Create a ROS 2 workspace
 if [ ! -d ~/ros2_workspace ]; then
     echo "Creating ROS 2 workspace..."
+    source /opt/ros/humble/setup.bash
     mkdir -p ~/ros2_ws/src
     cd ~/ros2_ws
+    rosdep install -i --from-path src --rosdistro humble -y
     colcon build
+    source ~/ros2_ws/install/local_setup.bash
     source ~/ros2_ws/install/setup.bash
     echo "ROS 2 workspace created."
 else
