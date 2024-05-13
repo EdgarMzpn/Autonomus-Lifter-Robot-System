@@ -3,7 +3,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 import numpy as np
 import matplotlib.pyplot as plt
-from tf.transformations import euler_from_quaternion
+from tf_transformations import euler_from_quaternion
 
 class SLAMNode(Node):
     def __init__(self):
