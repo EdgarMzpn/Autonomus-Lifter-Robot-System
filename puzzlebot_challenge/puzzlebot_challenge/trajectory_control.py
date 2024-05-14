@@ -14,7 +14,7 @@ class TrayectoryControl(Node):
         self.lidar_sub = self.create_subscription(Float32, '/filtered_scan', self.lidar_callback, 10)
         self.velocity_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
 
-        self.pose_pub = self.create_publisher(Pose, 'pose', 1)
+        self.pose_pub = self.create_publisher(Pose, 'pose_ideal', 1)
         self.new_pose = Pose()
 
         self.trajectory = np.array([[0, 0]])  # Inicia en el origen
@@ -64,7 +64,7 @@ class TrayectoryControl(Node):
             self.new_pose.orientation.z = self.orientation + np.pi / 2
             # Reduce linear velocity to slow down while avoiding obstacle
             self.new_pose.linear.x = self.linear_velocity
-            self.pose_pub(self.new_pose)
+            self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
         plt.figure(figsize=(8, 6))

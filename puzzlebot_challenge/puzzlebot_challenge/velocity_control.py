@@ -49,7 +49,7 @@ class Velocity_Control(Node):
         self.error_pub = self.create_publisher(Point, 'error', 1)
 
         # Subscribers
-        self.pose_sub = self.create_subscription(Pose, 'pose', self.cbPose, 10)
+        self.pose_sub = self.create_subscription(Pose, 'pose_ideal', self.cbPose, 10)
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.cbOdom, 10)
 
         # Start the timer now
