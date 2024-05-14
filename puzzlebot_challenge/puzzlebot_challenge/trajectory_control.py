@@ -1,6 +1,6 @@
 import rclpy
 from geometry_msgs.msg import Pose, Twist
-from rclpy.node import Node
+from rclpy.node import Node, Float32
 from nav_msgs.msg import Odometry
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +19,10 @@ class TrayectoryControl(Node):
         self.trajectory = np.array([[0, 0]])  # Inicia en el origen
         self.landmarks = []  # Lista de landmarks (puntos de referencia) en el mapa
         self.distances = []  # Lista de la distancia a los puntos devueltos por el lidar
-        self.angular_velocity = 0
+        
+        self.distance_threshold = 0.5  # Threshold for considering obstacles
+        self.angular_velocity_threshold = 0.05  # Threshold for angular velocity
+        self.linear_velocity = 0.1  # Linear velocity when avoiding obstacles
 
     def odometry_callback(self, msg):
         # Obtener la posición y la orientación del mensaje de odometría
@@ -46,9 +49,8 @@ class TrayectoryControl(Node):
 
     def update_trajectory(self, position_x, position_y, orientation):
         # Actualiza la trayectoria del robot usando la posición y la orientación
-        angular_velocity_threshold = 0.05
 
-        if self.angular_velocity < angular_velocity_threshold:
+        if self.angular_velocity < self.angular_velocity_threshold:
             x, y = self.trajectory[-1]
             distance = np.sqrt((position_x - x)**2 + (position_y - y)**2)
             new_x = int((x + distance * np.cos(orientation)) * 100) # cm
@@ -56,10 +58,12 @@ class TrayectoryControl(Node):
             self.trajectory = np.vstack([self.trajectory, [new_x, new_y]])
     
     def avoid_obstacle(self):
-        distance_threshold = 0.1
-        if (self.distances[0] < distance_threshold and self.distances[-1] < distance_threshold) or (self.trajectory[-1] in self.landmarks):
+        if (self.distances[0] < self.distance_threshold and self.distances[-1] < self.distance_threshold) or self.trajectory[-1] in self.landmarks:
+            # If obstacle detected or approaching a landmark, adjust orientation to avoid it
             self.new_pose.orientation.z = self.orientation + np.pi / 2
- 
+            # Reduce linear velocity to slow down while avoiding obstacle
+            self.new_pose.linear.x = self.linear_velocity
+
     def plot_map(self):
         plt.figure(figsize=(8, 6))
         plt.plot(self.trajectory[:, 0], self.trajectory[:, 1], 'b-', label='Trayectoria del robot')
@@ -75,13 +79,13 @@ class TrayectoryControl(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    trayectory_control_node = TrayectoryControl()
+    slam_node = TrayectoryControl()
 
-    rclpy.spin(trayectory_control_node)
+    rclpy.spin(slam_node)
 
-    trayectory_control_node.plot_map()
+    slam_node.plot_map()
 
-    trayectory_control_node.destroy_node()
+    slam_node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
