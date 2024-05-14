@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 import matplotlib.pyplot as plt
 from tf_transformations import euler_from_quaternion
+from std_msgs.msg import Float32
 
 class TrayectoryControl(Node):
     def __init__(self):
@@ -63,6 +64,7 @@ class TrayectoryControl(Node):
             self.new_pose.orientation.z = self.orientation + np.pi / 2
             # Reduce linear velocity to slow down while avoiding obstacle
             self.new_pose.linear.x = self.linear_velocity
+            self.pose_pub(self.new_pose)
 
     def plot_map(self):
         plt.figure(figsize=(8, 6))

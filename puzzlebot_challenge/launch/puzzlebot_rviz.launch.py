@@ -32,7 +32,7 @@ def generate_launch_description():
     
     pose_sim = Node(
             package='puzzlebot_challenge',
-            executable='puzzlebot_kinematics',
+            executable='pose_sim',
             name='puzzlebot_kinematics'
     )
 
@@ -56,8 +56,14 @@ def generate_launch_description():
 
     trayectory = Node(
         package='puzzlebot_challenge',
-        executable='trayectory_control.py',
+        executable='trayectory_control',
         name='trayectory_control'
+    )
+
+    simlulation = Node(
+        package='puzzlebot_challenge',
+        executable='obstacule_sim',
+        name='obstacule_sim'
     )
 
 
@@ -65,11 +71,12 @@ def generate_launch_description():
         robot_state_publisher_node,
         rviz_node,
         tf2_ros,
-        # pose_sim, 
+        #pose_sim, 
         localisation,
         joint_state, 
         controller,
-        trayectory
+        trayectory,
+        simlulation
     ])
 
 if __name__ == '__main__':
