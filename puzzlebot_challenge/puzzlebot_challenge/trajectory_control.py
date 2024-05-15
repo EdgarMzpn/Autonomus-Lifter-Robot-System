@@ -13,7 +13,7 @@ class TrajectoryControl(Node):
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
-        self.pose_pub = self.create_publisher(Pose, 'pose', 1)
+        self.pose_pub = self.create_publisher(Pose, 'pose_ideal', 1)
         
         self.new_pose = Pose()
         self.trajectory = np.array([[0.0, 0.0]])  # Inicia en el origen
