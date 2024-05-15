@@ -39,6 +39,9 @@ class TrajectoryControl(Node):
         # Actualizar la trayectoria del robot
         self.update_trajectory(position_x, position_y, orientation)
         
+        # Evitar obstáculos si es necesario
+        self.avoid_obstacle(orientation)
+        
         # Actualizar el mapa (en este caso, solo se agregan puntos de referencia en ciertos pasos)
         if len(self.trajectory) == 20:
             self.landmarks.append(self.trajectory[-1])
@@ -64,18 +67,21 @@ class TrajectoryControl(Node):
                 self.trajectory = np.array([[position_x, position_y]])
     
     def avoid_obstacle(self, orientation):
-        if (self.distances[0] < self.distance_threshold and self.distances[-1] < self.distance_threshold) or self.trajectory[-1].tolist() in self.landmarks:
-            # Si se detecta un obstáculo o se está acercando a un punto de referencia, ajusta la orientación del robot para evitarlo
+        if self.distances and ((self.distances[0] < self.distance_threshold and self.distances[-1] < self.distance_threshold) or self.trajectory[-1].tolist() in self.landmarks):
+            # Si hay elementos en self.distances y se cumplen las condiciones, procede con el código
             self.new_pose.orientation.z = orientation + np.pi / 2
-            # Reduce la velocidad lineal para disminuir la velocidad mientras se evita el obstáculo
             self.new_pose.linear.x = self.linear_velocity
             
-            # Aquí creamos una instancia del mensaje Pose y lo publicamos en el tema 'pose_ideal'
+            # Actualizar la posición de new_pose basada en la posición actual del robot
+            self.new_pose.position.x = self.trajectory[-1, 0]
+            self.new_pose.position.y = self.trajectory[-1, 1]
+            
             pose_msg = Pose()
             pose_msg.position.x = self.new_pose.position.x
             pose_msg.position.y = self.new_pose.position.y
             pose_msg.orientation.z = self.new_pose.orientation.z
             self.pose_pub.publish(pose_msg)
+
 
     def plot_map(self):
         plt.figure(figsize=(8, 6))
