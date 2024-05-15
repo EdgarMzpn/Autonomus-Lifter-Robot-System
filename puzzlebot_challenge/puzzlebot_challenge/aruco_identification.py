@@ -6,6 +6,7 @@ from puzzlebot_msgs.msg import Arucoinfo
 from cv_bridge import CvBridge
 import cv2
 from pyzbar.pyzbar import decode
+print(cv2.__version__)
 
 class QRCodeTracker(Node):
     def __init__(self):
@@ -26,9 +27,10 @@ class QRCodeTracker(Node):
         cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self.width = cv_image.shape[1]
         # qr_codes = decode(cv_image)
-        arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-        arucoParams = cv2.aruco.DetectorParameters_create()
+        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        arucoParams = cv2.aruco.DetectorParameters()
         (corners, ids, rejected) = cv2.aruco.detectMarkers(cv_image, arucoDict, parameters=arucoParams)
+
         if corners:
             for i, aruco in enumerate(corners):
                 x = int(sum(corner[0][0] for corner in aruco) / len(aruco))
