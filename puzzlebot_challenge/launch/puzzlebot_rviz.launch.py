@@ -56,8 +56,8 @@ def generate_launch_description():
 
     trayectory = Node(
         package='puzzlebot_challenge',
-        executable='trayectory_control',
-        name='trayectory_control'
+        executable='trajectory_control',
+        name='trajectory_control'
     )
 
     simlulation = Node(

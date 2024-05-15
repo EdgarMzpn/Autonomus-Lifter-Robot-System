@@ -33,7 +33,7 @@ setup(
             'velocity_control = puzzlebot_challenge.velocity_control:main',
             'image_stream = puzzlebot_challenge.image_stream:main',
             'aruco = puzzlebot_challenge.aruco_identification:main',
-            'trajectory_control = puzzlebot_challenge.Trajectory_Control:main',
+            'trajectory_control = puzzlebot_challenge.trajectory_control:main',
             'obstacule_sim=puzzlebot_challenge.obstacule_sim:main'
         ],
     },
