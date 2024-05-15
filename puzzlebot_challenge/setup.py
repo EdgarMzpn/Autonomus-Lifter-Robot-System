@@ -34,7 +34,8 @@ setup(
             'image_stream = puzzlebot_challenge.image_stream:main',
             'aruco = puzzlebot_challenge.aruco_identification:main',
             'trajectory_control = puzzlebot_challenge.trajectory_control:main',
-            'obstacule_sim=puzzlebot_challenge.obstacule_sim:main'
+            'obstacule_sim=puzzlebot_challenge.obstacule_sim:main',
+            'rplidar = puzzlebot_challenge.filter_scan:main',
         ],
     },
 )
