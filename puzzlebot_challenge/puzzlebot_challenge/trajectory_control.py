@@ -12,7 +12,6 @@ class TrajectoryControl(Node):
         super().__init__('Trajectory_Control')
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
-        self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         self.pose_pub = self.create_publisher(Pose, 'pose_ideal', 1)
         
         self.new_pose = Pose()
@@ -75,67 +74,11 @@ class TrajectoryControl(Node):
 
     def avoid_obstacle(self, orientation):
         if self.distances and min(self.distances) < self.distance_threshold:
-            twist_msg = Twist()
-            twist_msg.linear.x = 0.0
-            twist_msg.angular.z = self.angular_velocity
-            self.velocity_pub.publish(twist_msg)
+            self.new_pose.orientation.z = np.pi/2
+            self.pose_pub.publish(self.new_pose)
         else:
-            twist_msg = Twist()
-            twist_msg.linear.x = self.linear_velocity
-            twist_msg.angular.z = 0.0
-            self.velocity_pub.publish(twist_msg)
-
-    def move_and_turn_if_necessary(self, orientation):
-        if self.distance_covered >= 1.0:
-            self.distance_covered = 0.0
-            new_orientation = orientation - np.pi / 2
-            quaternion = quaternion_from_euler(0, 0, new_orientation)
-            self.new_pose.orientation.x = quaternion[0]
-            self.new_pose.orientation.y = quaternion[1]
-            self.new_pose.orientation.z = quaternion[2]
-            self.new_pose.orientation.w = quaternion[3]
-            pose_msg = Pose()
-            pose_msg.position.x = self.last_position[0]
-            pose_msg.position.y = self.last_position[1]
-            pose_msg.orientation = self.new_pose.orientation
-            self.pose_pub.publish(pose_msg)
-            twist_msg = Twist()
-            twist_msg.linear.x = 0.0
-            twist_msg.angular.z = -self.angular_velocity
-            self.velocity_pub.publish(twist_msg)
-        else:
-            twist_msg = Twist()
-            twist_msg.linear.x = self.linear_velocity
-            twist_msg.angular.z = 0.0
-            self.velocity_pub.publish(twist_msg)
-
-    def update_pose_sim(self):
-        self.duration = self.get_clock().now() - self.start_time
-        self.dt = self.duration.nanoseconds * 1e-9
-        self.angle += self.angular_speed * self.dt
-        self.angle = self.angle % 6.28
-        
-        x_dot = self.linear_speed * np.cos(self.angle)
-        y_dot = self.linear_speed * np.sin(self.angle)
-        self.positionx += x_dot * self.dt
-        self.positiony += y_dot * self.dt
-        
-        if self.linear_speed != 0. or self.angular_speed != 0:
-            self.wl = ((2 * self.linear_speed) - (self.angular_speed * self.l)) / (2 * self.r)
-            self.wr = ((2 * self.linear_speed) + (self.angular_speed * self.l)) / (2 * self.r)
-        else:
-            self.wl = 0.0
-            self.wr = 0.0
-        
-        self.new_pose.position.x = self.positionx
-        self.new_pose.position.y = self.positiony
-        quaternion = quaternion_from_euler(0, 0, self.angle)
-        self.new_pose.orientation.x = quaternion[0]
-        self.new_pose.orientation.y = quaternion[1]
-        self.new_pose.orientation.z = quaternion[2]
-        self.new_pose.orientation.w = quaternion[3]
-        self.pose_pub.publish(self.new_pose)
-        self.start_time = self.get_clock().now()
+            self.new_pose.orientation.z = 0
+            self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
         plt.figure(figsize=(8, 6))
