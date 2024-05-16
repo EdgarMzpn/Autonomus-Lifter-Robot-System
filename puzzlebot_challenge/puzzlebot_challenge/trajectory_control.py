@@ -56,18 +56,20 @@ class TrajectoryControl(Node):
     def lidar_callback(self, msg):
         self.distances = list(msg.data)
 
-    def goal_callback(self, msg):
-        self.new_pose = msg
+    def goal_callback(self, msg: Pose):
+        self.goal = msg
 
     def update_trajectory(self, position_x, position_y, orientation):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
 
     def avoid_obstacle(self):
         if self.distances and min(self.distances) < self.distance_threshold:
+            self.new_pose.position.x = 0.05
             self.new_pose.orientation.w = np.pi/2
             self.pose_pub.publish(self.new_pose)
         else:
-            self.new_pose.orientation.w = 0.0
+            self.new_pose.position.x = self.goal.position.x
+            self.new_pose.orientation.w = self.goal.orientation.w
             self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
