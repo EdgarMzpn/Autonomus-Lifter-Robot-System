@@ -6,7 +6,8 @@ class goal_simulation(Node):
     def __init__(self):
         super().__init__('goal_simulation')
         self.pose_pub = self.create_publisher(Pose, 'goal', 1)
-        self.publish_pose()  # Publica la pose al inicio
+        while True:
+            self.publish_pose()  # Publica la pose al inicio
 
     def publish_pose(self):
         # Define la pose que deseas publicar (ejemplo: x=1, y=2, z=0)
@@ -20,7 +21,6 @@ class goal_simulation(Node):
         pose.orientation.w = 1.0
 
         self.pose_pub.publish(pose)
-        self.get_logger().info("Sending Pose: {}".format(pose))
 
 def main(args=None):
     rclpy.init(args=args)

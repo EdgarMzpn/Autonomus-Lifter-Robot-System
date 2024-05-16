@@ -83,7 +83,7 @@ def generate_launch_description():
         controller,
         #trayectory,
         simlulation,
-        #goal
+        goal
     ])
 
 if __name__ == '__main__':

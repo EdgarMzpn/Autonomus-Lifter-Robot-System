@@ -57,7 +57,7 @@ class TrajectoryControl(Node):
         self.distances = list(msg.data)
 
     def goal_callback(self, msg):
-        self.new_pose = msg.data
+        self.new_pose = msg
 
     def update_trajectory(self, position_x, position_y, orientation):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
