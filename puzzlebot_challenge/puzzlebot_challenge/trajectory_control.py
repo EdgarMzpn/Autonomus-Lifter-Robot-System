@@ -50,7 +50,7 @@ class TrajectoryControl(Node):
             self.distance_covered += delta_distance
         
         self.last_position = (position_x, position_y)
-        self.avoid_obstacle()
+        self.avoid_obstacle(position_x, position_y, orientation)
         
         self.update_trajectory(position_x, position_y, orientation)
 
@@ -66,14 +66,24 @@ class TrajectoryControl(Node):
     def update_trajectory(self, position_x, position_y, orientation):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
 
-    def avoid_obstacle(self):
-        if self.distances and min(self.distances) < self.distance_threshold:
-            self.new_pose.position.x = self.current_pose.position.x
-            self.new_pose.position.y = np.pi/2
-            self.pose_pub.publish(self.new_pose)
-        else:
-            self.new_pose.position.x = self.goal.position.x
-            self.new_pose.position.y = self.goal.position.y
+    def avoid_obstacle(self, position_x, position_y, orientation):
+            attractive_force = 0.1 * np.array([self.goal.position.x - position_x, self.goal.position.y - position_y])
+            repulsive_force = np.array([0.0, 0.0])
+
+            for distance in self.distances:
+                if distance < self.distance_threshold:
+                    angle = orientation + np.pi / 2  # Convert orientation to obstacle-facing angle
+                    repulsive_force += 0.5 * np.array([np.cos(angle), np.sin(angle)]) / distance**2
+            
+            total_force = attractive_force + repulsive_force
+            total_force /= np.linalg.norm(total_force)  # Normalize force vector
+            
+            # Update robot's pose based on the calculated force
+            self.new_pose.position.x = position_x + total_force[0]
+            self.new_pose.position.y = position_y + total_force[1]
+            self.new_pose.position.z = 0.0  # Assuming 2D navigation, z = 0
+            
+            # Publish the new pose
             self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
