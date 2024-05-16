@@ -36,10 +36,9 @@ class TrajectoryControl(Node):
         
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
-        self.timer = self.create_timer(0.1, self.update_pose_sim)
 
         # Publicar pose inicial (1 metro en x)
-        self.new_pose.position.x = 1.0
+        self.new_pose.position.x = 2.0
         self.new_pose.position.y = 0.0
         quaternion = quaternion_from_euler(0, 0, 0)
         self.new_pose.orientation.x = quaternion[0]
@@ -61,9 +60,6 @@ class TrajectoryControl(Node):
         self.last_position = (position_x, position_y)
         self.avoid_obstacle(orientation)
         
-        if not self.distances or all(d >= self.distance_threshold for d in self.distances):
-            self.move_and_turn_if_necessary(orientation)
-        
         self.update_trajectory(position_x, position_y, orientation)
 
     def lidar_callback(self, msg):
@@ -77,7 +73,7 @@ class TrajectoryControl(Node):
             self.new_pose.orientation.z = np.pi/2
             self.pose_pub.publish(self.new_pose)
         else:
-            self.new_pose.orientation.z = 0
+            self.new_pose.orientation.z = 0.0
             self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
