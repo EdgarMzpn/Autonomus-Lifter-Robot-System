@@ -22,7 +22,7 @@ class QRCodeTracker(Node):
         self.object_width_real = 0.05
         self.intrinsics = None
         self.subscription = self.create_subscription(Image, '/video_source/raw', self.image_callback, 10)
-        self.subscription_info = self.create_subscription(CameraInfo, '/video_source/camera_info', self.camera_info_callback, 10)
+        self.subscription_info = self.create_subscription(CameraInfo, '/camera_info', self.camera_info_callback, 10)
         self.qr_pub = self.create_publisher(Arucoinfo, '/aruco_info', 1)
 
     def camera_info_callback(self, msg):
@@ -31,6 +31,12 @@ class QRCodeTracker(Node):
             'fy': msg.k[4],
             'cx': msg.k[2],
             'cy': msg.k[5]
+        } 
+        self.intrinsics = {
+            'fx': 1284.144242,
+            'fy': 1290.880880,
+            'cx': 598.847438,
+            'cy': 351.188314
         } 
 
     def image_callback(self, msg):
@@ -56,7 +62,7 @@ class QRCodeTracker(Node):
                 w = abs(aruco[0][0][0] - aruco[0][1][0])
                 h = abs(aruco[0][0][1] - aruco[0][3][1])
 
-                z_3d = (fx * self.object_width_real) / w
+                z_3d = (fx * self.object_width_real) / h
 
                 x_3d = (x - cx) * z_3d / fx
                 y_3d = (y - cy) * z_3d / fy
