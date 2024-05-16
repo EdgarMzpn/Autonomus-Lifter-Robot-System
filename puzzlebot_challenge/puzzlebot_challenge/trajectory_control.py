@@ -13,6 +13,7 @@ class TrajectoryControl(Node):
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
         self.goal_sub = self.create_subscription(Pose, '/goal', self.goal_callback, 10)
+        self.pose_sub = self.create_subscription(Pose, '/pose', self.pose_callback, 10)
         self.pose_pub = self.create_publisher(Pose, '/pose_ideal', 1)
         
         self.new_pose = Pose()
@@ -59,17 +60,20 @@ class TrajectoryControl(Node):
     def goal_callback(self, msg: Pose):
         self.goal = msg
 
+    def pose_callback(self, msg: Pose):
+        self.current_pose = msg
+
     def update_trajectory(self, position_x, position_y, orientation):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
 
     def avoid_obstacle(self):
         if self.distances and min(self.distances) < self.distance_threshold:
-            self.new_pose.position.x = 0.05
-            self.new_pose.orientation.w = np.pi/2
+            self.new_pose.position.x = self.current_pose.position.x
+            self.new_pose.position.y = np.pi/2
             self.pose_pub.publish(self.new_pose)
         else:
             self.new_pose.position.x = self.goal.position.x
-            self.new_pose.orientation.w = self.goal.orientation.w
+            self.new_pose.position.y = self.goal.position.y
             self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
