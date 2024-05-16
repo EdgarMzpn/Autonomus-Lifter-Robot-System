@@ -12,6 +12,7 @@ class TrajectoryControl(Node):
         super().__init__('Trajectory_Control')
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
+        self.goal_sub = self.create_subscription(Pose, 'goal', self.goal_callback, 10)
         self.pose_pub = self.create_publisher(Pose, 'pose_ideal', 1)
         
         self.new_pose = Pose()
@@ -37,16 +38,6 @@ class TrajectoryControl(Node):
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
 
-        # Publicar pose inicial (1 metro en x)
-        self.new_pose.position.x = 2.0
-        self.new_pose.position.y = 0.0
-        quaternion = quaternion_from_euler(0, 0, 0)
-        self.new_pose.orientation.x = quaternion[0]
-        self.new_pose.orientation.y = quaternion[1]
-        self.new_pose.orientation.z = quaternion[2]
-        self.new_pose.orientation.w = quaternion[3]
-        self.pose_pub.publish(self.new_pose)
-
     def odometry_callback(self, msg: Odometry):
         position_x = msg.pose.pose.position.x
         position_y = msg.pose.pose.position.y
@@ -58,17 +49,20 @@ class TrajectoryControl(Node):
             self.distance_covered += delta_distance
         
         self.last_position = (position_x, position_y)
-        self.avoid_obstacle(orientation)
+        self.avoid_obstacle()
         
         self.update_trajectory(position_x, position_y, orientation)
 
     def lidar_callback(self, msg):
         self.distances = list(msg.data)
 
+    def goal_callback(self, msg):
+        self.new_pose = msg.data
+
     def update_trajectory(self, position_x, position_y, orientation):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
 
-    def avoid_obstacle(self, orientation):
+    def avoid_obstacle(self):
         if self.distances and min(self.distances) < self.distance_threshold:
             self.new_pose.orientation.z = np.pi/2
             self.pose_pub.publish(self.new_pose)
