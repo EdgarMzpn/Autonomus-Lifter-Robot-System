@@ -2,9 +2,9 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Pose
 
-class Goal_sim(Node):
+class goal_simulation(Node):
     def __init__(self):
-        super().__init__('Goal_sim')
+        super().__init__('goal_simulation')
         self.pose_pub = self.create_publisher(Pose, 'goal', 1)
         self.publish_pose()  # Publica la pose al inicio
 
@@ -20,10 +20,11 @@ class Goal_sim(Node):
         pose.orientation.w = 1.0
 
         self.pose_pub.publish(pose)
+        self.get_logger().info("Sending Pose: {}".format(pose))
 
 def main(args=None):
     rclpy.init(args=args)
-    goal_sim_node = Goal_sim()
+    goal_sim_node = goal_simulation()
     rclpy.spin(goal_sim_node)
     goal_sim_node.destroy_node()
     rclpy.shutdown()
