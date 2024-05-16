@@ -20,21 +20,8 @@ class TrajectoryControl(Node):
         self.trajectory = np.array([[0.0, 0.0]])  # Inicia en el origen
         self.distances = []  # Lista de la distancia a los puntos devueltos por el lidar
         self.distance_threshold = 0.5  # Threshold for considering obstacles
-        self.linear_velocity = 0.1  # Linear velocity when avoiding obstacles
-        self.angular_velocity = 0.5  # Angular velocity when avoiding obstacles
         self.distance_covered = 0.0  # Distancia cubierta por el robot
         self.last_position = None  # Última posición conocida del robot
-        
-        # Variables para la simulación de la pose
-        self.linear_speed = 0.0
-        self.angular_speed = 0.0
-        self.angle = 0.0
-        self.positionx = 0.0
-        self.positiony = 0.0
-        self.wl = 0.0
-        self.wr = 0.0
-        self.l = 0.19
-        self.r = 0.05
         
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
@@ -67,24 +54,33 @@ class TrajectoryControl(Node):
         self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
 
     def avoid_obstacle(self, position_x, position_y, orientation):
-            attractive_force = 0.1 * np.array([self.goal.position.x - position_x, self.goal.position.y - position_y])
-            repulsive_force = np.array([0.0, 0.0])
+        # Check for valid inputs
+        if not all(np.isfinite([self.goal.position.x, self.goal.position.y, position_x, position_y])):
+            return
+        
+        attractive_force = 0.1 * np.array([self.goal.position.x - position_x, self.goal.position.y - position_y])
+        repulsive_force = np.array([0.0, 0.0])
 
-            for distance in self.distances:
-                if distance < self.distance_threshold:
-                    angle = orientation + np.pi / 2  # Convert orientation to obstacle-facing angle
-                    repulsive_force += 0.5 * np.array([np.cos(angle), np.sin(angle)]) / distance**2
-            
-            total_force = attractive_force + repulsive_force
-            total_force /= np.linalg.norm(total_force)  # Normalize force vector
-            
-            # Update robot's pose based on the calculated force
-            self.new_pose.position.x = position_x + total_force[0]
-            self.new_pose.position.y = position_y + total_force[1]
-            self.new_pose.position.z = 0.0  # Assuming 2D navigation, z = 0
-            
-            # Publish the new pose
-            self.pose_pub.publish(self.new_pose)
+        for distance in self.distances:
+            # Check for division by zero and valid distance
+            if distance > 0 and distance < self.distance_threshold:
+                angle = orientation + np.pi / 2  # Convert orientation to obstacle-facing angle
+                repulsive_force += 0.5 * np.array([np.cos(angle), np.sin(angle)]) / distance**2
+        
+        # Check for NaN or infinite values
+        if not all(np.isfinite(repulsive_force)):
+            return
+        
+        total_force = attractive_force + repulsive_force
+        total_force /= np.linalg.norm(total_force)  # Normalize force vector
+
+        # Update robot's pose based on the calculated force
+        self.new_pose.position.x = position_x + total_force[0]
+        self.new_pose.position.y = position_y + total_force[1]
+        self.new_pose.position.z = 0.0  # Assuming 2D navigation, z = 0
+
+        # Publish the new pose
+        self.pose_pub.publish(self.new_pose)
 
     def plot_map(self):
         plt.figure(figsize=(8, 6))
