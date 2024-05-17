@@ -10,7 +10,7 @@ class Image_stream(Node):
     def __init__(self):
         super().__init__('QR_Identification')
         self.publisher = self.create_publisher(Image, 'video_source/raw', 10)
-        self.data_pub = self.create_publisher(CameraInfo, 'video_source/camera_info', 10)
+        self.data_pub = self.create_publisher(CameraInfo, 'camera_info', 10)
         self.bridge = CvBridge()
         self.cap = cv2.VideoCapture(0)
         self.new_resolution = (1280, 720)

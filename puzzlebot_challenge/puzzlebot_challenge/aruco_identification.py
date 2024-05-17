@@ -5,6 +5,7 @@ from std_msgs.msg import Int32,Float32
 from puzzlebot_msgs.msg import Arucoinfo
 from cv_bridge import CvBridge
 import cv2
+import numpy as np
 from pyzbar.pyzbar import decode
 print(cv2.__version__)
 
@@ -57,6 +58,11 @@ class QRCodeTracker(Node):
             cx = self.intrinsics['cx']
             cy = self.intrinsics['cy']
             for i, aruco in enumerate(corners):
+
+                distances = [np.linalg.norm(corner[0]) for corner in aruco[0]]
+                sorted_indices = np.argsort(distances)
+                sorted_corners = aruco[0][sorted_indices]
+
                 x = int(sum(corner[0][0] for corner in aruco) / len(aruco))
                 y = int(sum(corner[0][1] for corner in aruco) / len(aruco))
                 w = abs(aruco[0][0][0] - aruco[0][1][0])
@@ -71,7 +77,7 @@ class QRCodeTracker(Node):
                 # depth = (focal_length_pixels * self.object_width_real) / w
                 offset = int(self.width/2 - (x+w/2))
                 cv2.aruco.drawDetectedMarkers(cv_image, corners)
-                cv2.putText(cv_image, str(z_3d), (x + int(w /2), y + int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(cv_image, str(z_3d), (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 qr_info = Arucoinfo()
                 qr_info.tag = str(i)
                 qr_info.depth = z_3d
