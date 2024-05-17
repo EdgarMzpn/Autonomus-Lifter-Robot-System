@@ -25,10 +25,8 @@ class Localisation(Node):
         self.positionx = 0.0
         self.positiony = 0.0
 
-        self.true_angle = 0.0
         
         # Subscribers
-        self.sub_pose = self.create_subscription(Pose, '/pose', self.cbPose, 10)
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl,         
         rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
         self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr,
@@ -42,8 +40,6 @@ class Localisation(Node):
         time_period = 0.1
         self.timer = self.create_timer(time_period, self.odom_reading)
 
-    def cbPose(self, msg):
-        self.true_angle = msg.orientation.z
 
 
     def cbWr(self, msg):
@@ -65,8 +61,6 @@ class Localisation(Node):
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
         self.angle = self.angle % 6.28
-        self.get_logger().info("Angle variable: {}".format(self.angle))
-        self.get_logger().info("Angle true: {}".format(self.true_angle))
         self.angle += self.angular_speed * self.dt
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
