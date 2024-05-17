@@ -127,13 +127,9 @@ class Velocity_Control(Node):
         # Adjust current pose
         self.output_position, self.prev_position_error = self.PID_Linear(self.total_position_error, self.prev_position_error)
         self.output_angle, self.prev_angle_error = self.PID_Angular(self.angle_error, self.prev_angle_error)
-        
-        if abs(self.prev_angle_error) > 0.1:
-            self.output_velocity.angular.z = self.output_angle
-            self.output_velocity.linear.x = 0.0
-        else:
-            self.output_velocity.linear.x = self.output_position
-            self.output_velocity.angular.z = 0.0
+
+        self.output_velocity.angular.z = self.output_angle
+        self.output_velocity.linear.x = self.output_position
 
         self.output_error.x = self.total_position_error
         self.output_error.y = self.prev_angle_error
