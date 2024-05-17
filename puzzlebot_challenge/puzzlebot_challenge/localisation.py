@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 import numpy as np
 from std_msgs.msg import Float32
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
@@ -24,6 +24,7 @@ class Localisation(Node):
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
+
         
         # Subscribers
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl,         
@@ -40,6 +41,7 @@ class Localisation(Node):
         self.timer = self.create_timer(time_period, self.odom_reading)
 
 
+
     def cbWr(self, msg):
         self.wr = msg.data
 
@@ -54,12 +56,12 @@ class Localisation(Node):
 
         # Convert the duration to a float value (in seconds)
         self.dt = self.duration.nanoseconds * 1e-9
-
+        
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-        self.angle += self.angular_speed * self.dt
         self.angle = self.angle % 6.28
+        self.angle += self.angular_speed * self.dt
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
@@ -67,7 +69,7 @@ class Localisation(Node):
         odom = Odometry()
         odom.header.stamp = self.current_time 
         odom.pose.pose.position.x = self.positionx
-        odom.pose.pose.position.y = self.positiony
+        odom.pose.pose.position.y = self.positiony  
         q = quaternion_from_euler(0., 0., self.angle)
         odom.pose.pose.orientation.x = q[0]
         odom.pose.pose.orientation.y = q[1]
@@ -76,38 +78,9 @@ class Localisation(Node):
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
+        # self.get_logger().info("Position y msg: {}".format(odom.pose.pose.position.y))
         self.start_time = self.get_clock().now()
 
-    def odom_linear_model(self):
-        #Get time difference 
-        self.current_time = self.start_time.to_msg()
-        self.duration = self.get_clock().now() - self.start_time
-
-        # Convert the duration to a float value (in seconds)
-        self.dt = self.duration.nanoseconds * 1e-9
-
-        self.linear_speed = self.r * (self.wr + self.wl) / 2.
-        self.angular_speed = self.r * (self.wr - self.wl) / self.l
-
-        self.angle += self.angular_speed * self.dt
-        self.angle = self.angle % 6.28
-        self.positionx += ((-self.linear_speed * np.sin(self.angle) * self.angle) - (self.linear_speed * np.cos(self.angle))) * self.dt
-        self.positiony += ((self.linear_speed * np.cos(self.angle) * self.angle) + (self.linear_speed * np.sin(self.angle))) * self.dt
-
-        # Publish odometry via odom topic
-        odom = Odometry()
-        odom.header.stamp = self.current_time 
-        odom.pose.pose.position.x = self.positionx
-        odom.pose.pose.position.y = self.positiony
-        q = quaternion_from_euler(0., 0., self.angle)
-        odom.pose.pose.orientation.x = q[0]
-        odom.pose.pose.orientation.y = q[1]
-        odom.pose.pose.orientation.z = q[2]
-        odom.pose.pose.orientation.w = q[3]
-        odom.twist.twist.linear.x = self.linear_speed
-        odom.twist.twist.angular.z = self.angular_speed
-        self.odom_pub.publish(odom)
-        self.start_time = self.get_clock().now()
 
 
 
