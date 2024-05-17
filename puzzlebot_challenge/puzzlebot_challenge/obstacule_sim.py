@@ -12,7 +12,7 @@ class LidarPublisherNode(Node):
 
     def timer_callback(self):
         # Generamos un arreglo de 10 valores aleatorios para simular coordenadas LIDAR
-        lidar_data = np.array([[1.5, 0.0]])  # Convertir lista de listas a arreglo numpy
+        lidar_data = np.array([[1.5, -0.5], [1.5, 0.0], [1.5, 0.5]])  # Convertir lista de listas a arreglo numpy
         
         # Creamos el mensaje Float32MultiArray y lo llenamos con los datos del arreglo
         msg = Float32MultiArray()
