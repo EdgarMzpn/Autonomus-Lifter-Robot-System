@@ -76,4 +76,12 @@ source scripts/create_udev_rules.sh
 cd ~/ros2_ws
 echo "Installation for ROS2 complete"
 
+# Installing the slam toolbox package
+echo "Installing Slam Toolbox"
+sudo apt install -y ros-humble-slam-toolbox
+echo "Finished installing Slam Toolbox"
+
+#Installing Nav2 requiring packages
+echo "Installing Nav2 missing packages"
+sudo apt install ros-humble-nav2-bringup
 echo "Installation completed."
