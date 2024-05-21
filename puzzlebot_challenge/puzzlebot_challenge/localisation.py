@@ -7,6 +7,9 @@ from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
+from rclpy.qos import QoSProfile
+from rclpy.qos import ReliabilityPolicy
+from rclpy.qos import qos_profile_sensor_data
 
 class Localisation(Node):
     def __init__(self):
@@ -27,10 +30,8 @@ class Localisation(Node):
 
         
         # Subscribers
-        self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl,         
-        rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
-        self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr,
-        rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT))
+        self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl, qos_profile_sensor_data)
+        self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr, qos_profile_sensor_data)
 
         # Publishers 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
