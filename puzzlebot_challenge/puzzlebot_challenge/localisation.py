@@ -61,7 +61,7 @@ class Localisation(Node):
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-        self.angle = self.angle % 6.28
+        self.angle = self.angle % 6.28 * 2
         self.angle += self.angular_speed * self.dt
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt

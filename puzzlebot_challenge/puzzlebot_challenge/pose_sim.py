@@ -51,7 +51,7 @@ class Pose_Sim(Node):
 
         #Calculate angle and wrap to 2pi
         self.angle += self.angular_speed * self.dt
-        self.angle = self.angle % 6.28
+        self.angle = self.angle % 6.28 * 2
         
         x_dot = self.linear_speed * np.cos(self.angle)
         y_dot = self.linear_speed * np.sin(self.angle)
