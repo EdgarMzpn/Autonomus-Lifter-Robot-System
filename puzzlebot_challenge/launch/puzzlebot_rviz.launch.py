@@ -66,6 +66,12 @@ def generate_launch_description():
         name='obstacule_sim'
     )
 
+    goal = Node(
+        package='puzzlebot_challenge',
+        executable='goal_simulation',
+        name='goal_simulation'
+    )
+
 
     return LaunchDescription([
         robot_state_publisher_node,
@@ -74,9 +80,10 @@ def generate_launch_description():
         pose_sim, 
         localisation,
         joint_state, 
-        controller
+        controller,
         #trayectory,
-        #simlulation
+        simlulation,
+        goal
     ])
 
 if __name__ == '__main__':

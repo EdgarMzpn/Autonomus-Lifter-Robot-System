@@ -37,6 +37,7 @@ setup(
             'trajectory_control = puzzlebot_challenge.trajectory_control:main',
             'obstacule_sim=puzzlebot_challenge.obstacule_sim:main',
             'rplidar = puzzlebot_challenge.filter_scan:main',
+            'goal_simulation = puzzlebot_challenge.goal_simulation:main'
         ],
     },
 )
