@@ -1,33 +1,53 @@
+# Ros libraries
 import rclpy
 from rclpy.node import Node
-import numpy as np
-from std_msgs.msg import Float32MultiArray
-from geometry_msgs.msg import Pose, Twist
+
+# Ros messages
+from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import LaserScan
-import matplotlib.pyplot as plt
+from std_msgs.msg import Float32MultiArray
+
+#Custom messages
+from puzzlebot_msgs.msg import Arucoinfo
+
+# Math libraries
+import numpy as np
 from tf_transformations import euler_from_quaternion
 
 class TrajectoryControl(Node):
     def __init__(self):
-        super().__init__('trajectory_control')
-        self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
-        self.lidar_sub = self.create_subscription(LaserScan, '/scan', self.lidar_callback, 10)
+        super().__init__('Trajectory_Control')
+
+        # Initialize subscribers
+        self.aruco_info_sub = self.create_publisher(Arucoinfo, '/aruco_info', self.aruco_info_callback, 10)
         self.goal_sub = self.create_subscription(Pose, '/goal', self.goal_callback, 10)
-        self.ideal_pose_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
+        self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
+        self.pose_sub = self.create_subscription(Pose, '/pose', self.pose_callback, 10)
 
-        self.new_cmd_vel = Twist()
-        self.trajectory = np.array([[0.0, 0.0]])  # Inicia en el origen
-        self.distances = []  # Lista de la distancia a los puntos devueltos por el lidar
-        self.angles = []  # Lista de los ángulos correspondientes
-        self.distance_threshold = 0.5  # Umbral para considerar obstáculos
-        self.distance_covered = 0.0  # Distancia cubierta por el robot
-        self.last_position = None  # Última posición conocida del robot
-        self.goal = None  # Añadido para inicializar goal
-        self.current_pose = None  # Añadido para inicializar current_pose
+        # Initialize publishers
+        self.pose_pub = self.create_publisher(Pose, '/pose_ideal', 1)
+        
+        # Initialize publish message
+        self.new_pose = Pose()
 
-        # Timer para actualizar la pose
+        # Initialize variables
+        self.distances = []  # Lidar points array
+        self.distance_threshold = 0.5  # Threshold for obstacle detection
+        self.distance_covered = 0.0  # Robot's covered distance
+        
+        # Timer for pose update
         self.start_time = self.get_clock().now()
+
+    # Callback functions
+    def aruco_info_callback(self, msg: Arucoinfo):
+        self.aruco_info = msg.data
+
+    def goal_callback(self, msg: Pose):
+        self.goal = msg
+
+    def lidar_callback(self, msg):
+        self.distances = list(msg.data)
 
     def odometry_callback(self, msg: Odometry):
         position_x = msg.pose.pose.position.x
@@ -44,53 +64,39 @@ class TrajectoryControl(Node):
 
         self.update_trajectory(position_x, position_y, orientation)
 
-    def lidar_callback(self, msg: LaserScan):
-        self.distances = np.array(msg.ranges)
-        self.angles = np.linspace(msg.angle_min, msg.angle_max, len(self.distances))
+    def pose_callback(self, msg: Pose):
+        self.current_pose = msg
 
-    def goal_callback(self, msg: Pose):
-        self.goal = msg
+    # States functions
+    def wander(self):
+        forward_offset = 0.1
+        self.new_pose.position.x = (self.current_pose.position.x + forward_offset) * np.cos(self.current_pose.orientation.z)
+        self.new_pose.position.y = (self.current_pose.position.y + forward_offset) * np.sin(self.current_pose.orientation.z)
+        
+    
+    def align_to_goal(self):
+        return 0
+    
+    def align_to_aruco(self):
+        return 0
 
-    def update_trajectory(self, position_x, position_y, orientation):
-        self.trajectory = np.vstack([self.trajectory, [position_x, position_y]])
+    def pick_up_aruco(self):
+        return 0
+    
+    def got_to_goal(self):
+        return 0
 
-    def avoid_obstacle(self, position_x, position_y, orientation):
-        if self.goal is None:
-            return
+    def place_aruco(self):
+        return 0
+    
+    # Utilities
+    def found_obstacle(self):
+        for obstacle in self.distances:
+            x_distance = self.disatnces[obstacle][0] * np.cos(self.current_pose.orientation.z)
+            y_distance = self.disatnces[obstacle][1] * np.sin(self.current_pose.orientation.z)
+            distance = np.sqrt(x_distance**2 + y_distance**2)
 
-        if not all(np.isfinite([self.goal.position.x, self.goal.position.y, position_x, position_y])):
-            return
 
-        attractive_force = 0.1 * np.array([self.goal.position.x - position_x, self.goal.position.y - position_y])
-        repulsive_force = np.array([0.0, 0.0])
-
-        for distance, angle in zip(self.distances, self.angles):
-            if 0 < distance < self.distance_threshold:
-                global_angle = orientation + angle
-                repulsive_force += 0.5 * np.array([np.cos(global_angle), np.sin(global_angle)]) / distance**2
-
-        if not all(np.isfinite(repulsive_force)):
-            return
-
-        total_force = attractive_force + repulsive_force
-        norm = np.linalg.norm(total_force)
-        if norm != 0:
-            total_force /= norm
-
-        self.new_cmd_vel.linear.x = total_force[0]
-        self.new_cmd_vel.angular.z = total_force[1]
-
-        self.ideal_pose_pub.publish(self.new_cmd_vel)
-
-    def plot_map(self):
-        plt.figure(figsize=(8, 6))
-        plt.plot(self.trajectory[:, 0], self.trajectory[:, 1], 'b-', label='Trayectoria del robot')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('Mapa y trayectoria del robot')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
 
 def main(args=None):
     rclpy.init(args=args)
