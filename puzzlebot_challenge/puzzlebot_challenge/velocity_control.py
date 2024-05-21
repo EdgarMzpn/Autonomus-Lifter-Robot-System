@@ -31,7 +31,7 @@ class Velocity_Control(Node):
         self.output_velocity = Twist()
 
         # Initialize PID controller parameters
-        self.linear_kp = 0.15
+        self.linear_kp = 0.20
         self.linear_ki = 0.0
         self.linear_kd = 0.05
         self.linear_integral = 0.0
@@ -127,7 +127,7 @@ class Velocity_Control(Node):
         self.cmd_vel_pub.publish(self.output_velocity)
         self.error_pub.publish(self.output_error)
 
-        if self.total_position_error < 0.5 and self.total_position_error > -0.5:
+        if self.total_position_error < 0.2 and self.total_position_error > -0.2:
             self.arrive.data = True
         else:
             self.arrive.data = False
