@@ -37,6 +37,8 @@ setup(
             'trajectory_control = puzzlebot_challenge.trajectory_control:main',
             'obstacule_sim=puzzlebot_challenge.obstacule_sim:main',
             'rplidar = puzzlebot_challenge.filter_scan:main',
+            'oval_pose = puzzlebot_challenge.oval_pose_publisher:main',
+            'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
         ],
     },
 )

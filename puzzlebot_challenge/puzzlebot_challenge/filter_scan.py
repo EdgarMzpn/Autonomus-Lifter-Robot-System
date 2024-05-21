@@ -38,7 +38,7 @@ class ScanFilter(Node):
 
 		# Work out the y coordinates of the ranges
 		# points = [r * sin(theta) if (theta < -2.5 or theta > 2.5) else inf for r,theta in zip(msg.ranges, angles)]
-		points = [r * sin(theta) if (theta < -2.0 or theta > 2.0) else inf for r,theta in zip(msg.ranges, angles)]
+		points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r,theta in zip(msg.ranges, angles)]
 
 		# If we're close to the x axis, keep the range, otherwise use inf, which means "no return"
 		new_ranges = [r if abs(y) < self.extent else inf for r,y in zip(msg.ranges, points)]

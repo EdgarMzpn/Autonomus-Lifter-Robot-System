@@ -28,6 +28,15 @@ def set_configurable_parameters(parameters):
     return dict([(param['name'], LaunchConfiguration(param['name'])) for param in parameters])
 
 def generate_launch_description():
+    rviz_config_path = get_package_share_directory('puzzlebot_challenge') + '/rviz/rviz_simple_test.rviz'
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_path]
+    )
+
     laser_filter_config = os.path.join(
         get_package_share_directory('puzzlebot_challenge'),
         'config',
@@ -49,6 +58,7 @@ def generate_launch_description():
             )
 
     return LaunchDescription(declare_configurable_parameters(configurable_parameters) + [
+        rviz_node,
         lidar_node,
         laser_filters,
     ])
