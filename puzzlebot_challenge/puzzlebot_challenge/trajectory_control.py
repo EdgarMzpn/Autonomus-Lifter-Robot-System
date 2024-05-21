@@ -69,10 +69,7 @@ class TrajectoryControl(Node):
 
     # States functions
     def wander(self):
-        forward_offset = 0.1
-        self.new_pose.position.x = (self.current_pose.position.x + forward_offset) * np.cos(self.current_pose.orientation.z)
-        self.new_pose.position.y = (self.current_pose.position.y + forward_offset) * np.sin(self.current_pose.orientation.z)
-        
+        return 0
     
     def align_to_goal(self):
         return 0
@@ -90,6 +87,11 @@ class TrajectoryControl(Node):
         return 0
     
     # Utilities
+    def move_forward(self):
+        forward_offset = 0.5
+        self.new_pose.position.x = (self.current_pose.position.x + forward_offset) * np.cos(self.current_pose.orientation.z)
+        self.new_pose.position.y = (self.current_pose.position.y + forward_offset) * np.sin(self.current_pose.orientation.z)
+
     def found_obstacle(self):
         for obstacle in self.distances:
             x_distance = self.disatnces[obstacle][0] * np.cos(self.current_pose.orientation.z)
