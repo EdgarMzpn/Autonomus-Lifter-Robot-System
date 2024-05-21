@@ -56,9 +56,16 @@ def generate_launch_description():
             name='laser_filter',
             parameters=[laser_filter_config]
             )
+    
+    filter_scan = Node(
+            package = 'puzzlebot_challenge',
+            executable = 'rplidar',
+            name = 'filter_scan'
+    )
 
     return LaunchDescription(declare_configurable_parameters(configurable_parameters) + [
         rviz_node,
         lidar_node,
         laser_filters,
+        filter_scan,
     ])
