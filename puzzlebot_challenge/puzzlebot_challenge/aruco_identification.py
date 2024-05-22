@@ -92,6 +92,8 @@ class QRCodeTracker(Node):
                 point.z = z_3d
                 qr_info.point = point
                 qr_info.offset = offset
+                qr_info.height = h
+                qr_info.width = w
                 self.qr_pub.publish(qr_info)
 
         cv2.imshow("QR Code Tracking", cv_image)
