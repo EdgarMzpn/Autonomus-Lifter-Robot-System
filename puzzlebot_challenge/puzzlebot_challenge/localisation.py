@@ -69,6 +69,8 @@ class Localisation(Node):
         # Publish odometry via odom topic
         odom = Odometry()
         odom.header.stamp = self.current_time 
+        odom.header.frame_id = 'world'
+        odom.child_frame_id = '/base_link'
         odom.pose.pose.position.x = self.positionx
         odom.pose.pose.position.y = self.positiony  
         q = quaternion_from_euler(0., 0., self.angle)
