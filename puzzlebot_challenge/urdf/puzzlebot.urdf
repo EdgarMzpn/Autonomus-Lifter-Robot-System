@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<robot name="PuzzleBot">
+  <!-- Base link -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size="0 0 0"/>  <!-- Considera especificar las dimensiones -->
+      </geometry>
+    </visual>
+  </link>
+  
+  <!-- Base_Footprint Link -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+  <link name="base_footprint">
+  </link>
+
+  <!-- Chassis link -->
+  <link name="chassis">
+    <visual>
+      <origin rpy="1.5708 0 1.5708" xyz="0 0 0.05" />
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>  <!-- Color blanco -->
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="1.5708 0 1.5708" xyz="0 0 0.05" />
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_13_Chassis.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Wheel Coupler link -->
+  <link name="wheel_coupler">
+    <visual>
+      <origin rpy="0 1.5708 -1.5708" xyz="0.05 0.085 0.05" />
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>  <!-- Color negro -->
+      </material>
+    </visual>
+  </link>
+
+  <!-- Wheel Coupler 2 link -->
+  <link name="wheel_coupler_2">
+    <visual>
+      <origin rpy="0 -1.5708 -1.5708" xyz="0.05 -0.085 0.05" />
+      <geometry>
+        <mesh filename="package://puzzlebot_challenge/models/MCR2_1000_1_1_Wheel_Coupler_2.stl"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>  <!-- Color negro -->
+      </material>
+    </visual>
+  </link>
+
+  <!-- Joints -->
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="chassis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="wheel_coupler_joint" type="continuous">
+    <parent link="chassis"/>
+    <child link="wheel_coupler"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0" rpy="0 0 0" />
+  </joint>
+  
+  <joint name="wheel_coupler_joint_2" type="continuous">
+    <parent link="chassis"/>
+    <child link="wheel_coupler_2"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0" rpy="0 0 0" />
+  </joint>
+>
+</robot>
