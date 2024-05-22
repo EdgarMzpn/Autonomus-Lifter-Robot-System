@@ -6,9 +6,8 @@ from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, Pose, Point
 from nav_msgs.msg import Odometry
 from tf_transformations import euler_from_quaternion
-from geometry_msgs.msg import Twist
 
-class Velocity_Control(Node):
+class VelocityControl(Node):
     def __init__(self):
         super().__init__('Velocity_Control')
         # Initialize puzzlebot variables
@@ -45,7 +44,7 @@ class Velocity_Control(Node):
 
         self.output_error = Point()
         self.arrive = Bool()
-        
+
         # Publishers
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 1)
         self.error_pub = self.create_publisher(Point, 'error', 1)
@@ -54,6 +53,7 @@ class Velocity_Control(Node):
         # Subscribers
         self.pose_sub = self.create_subscription(Pose, 'pose_ideal', self.cbPose, 10)
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.cbOdom, 10)
+        self.goal_sub = self.create_subscription(Pose, 'goal', self.goal_callback, 10)
 
         # Start the timer now
         self.start_time = self.get_clock().now()
@@ -72,22 +72,44 @@ class Velocity_Control(Node):
         # Get current angle from quaternion
         quaternion = msg.pose.pose.orientation
         self.current_angle = euler_from_quaternion([quaternion.x, quaternion.y, quaternion.z, quaternion.w])[2]
-    
-    def PID_General(self, error, prev_error, kp, ki, kd):
+
+    def goal_callback(self, msg):
+        self.desired_position_x = msg.position.x
+        self.desired_position_y = msg.position.y
+        self.desired_angle = msg.orientation.z
+
+    def PID_Linear(self, error, prev_error):
         # Proportional term
-        P = kp * error
-        
+        P = self.linear_kp * error
+
         # Integral term
-        self.integral += error
-        I = ki * self.integral
-        
+        self.linear_integral += error
+        I = self.linear_ki * self.linear_integral
+
         # Derivative term
         derivative = error - prev_error
-        D = kd * derivative
-        
+        D = self.linear_kd * derivative
+
         # Compute PID output
         output = P + I + D
-        
+
+        return output, error
+
+    def PID_Angular(self, error, prev_error):
+        # Proportional term
+        P = self.angular_kp * error
+
+        # Integral term
+        self.angular_integral += error
+        I = self.angular_ki * self.angular_integral
+
+        # Derivative term
+        derivative = error - prev_error
+        D = self.angular_kd * derivative
+
+        # Compute PID output
+        output = P + I + D
+
         return output, error
 
     def resultant_error(self):
@@ -100,7 +122,7 @@ class Velocity_Control(Node):
         self.angle_error = desired_angle - self.current_angle
 
     def velocity_control(self):
-        #Get time difference 
+        # Get time difference
         self.current_time = self.start_time.to_msg()
         self.duration = self.get_clock().now() - self.start_time
 
@@ -123,21 +145,20 @@ class Velocity_Control(Node):
         self.cmd_vel_pub.publish(self.output_velocity)
         self.error_pub.publish(self.output_error)
 
-        if self.total_position_error < 0.5 and self.total_position_error > -0.5:
+        # Publish arrive only when close to the goal and the goal is not (0.0, 0.0)
+        if self.total_position_error < 0.1 and (self.desired_position_x != 0.0 or self.desired_position_y != 0.0):
             self.arrive.data = True
         else:
             self.arrive.data = False
 
         self.arrive_pub.publish(self.arrive)
-        
 
 def main(args=None):
     rclpy.init(args=args)
-    velocity = Velocity_Control()
+    velocity = VelocityControl()
     rclpy.spin(velocity)
     velocity.destroy_node()
     rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
-        

@@ -2,48 +2,71 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Float32MultiArray
+from nav_msgs.msg import Odometry
 import numpy as np
 
 class GoalSimulation(Node):
     def __init__(self):
         super().__init__('goal_simulation')
         self.pose_pub = self.create_publisher(Pose, 'goal', 1)
-        self.lidar_sub = self.create_subscription(Float32MultiArray, '/filtered_scan', self.lidar_callback, 10)
+        self.lidar_sub = self.create_subscription(Float32MultiArray, 'filtered_scan', self.lidar_callback, 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.furthest_point = None
+        self.current_position = np.array([0.0, 0.0])
+        self.last_lidar_data = None
+        self.current_goal = Pose()
 
-        # Crear un temporizador para publicar la pose periódicamente
-        timer_period = 1.0  # segundos
-        self.timer = self.create_timer(timer_period, self.publish_pose)
+        # Initialize an initial goal
+        self.current_goal.position.x = 0.0
+        self.current_goal.position.y = 0.0
+        self.current_goal.position.z = 0.0
+        self.current_goal.orientation.x = 0.0
+        self.current_goal.orientation.y = 0.0
+        self.current_goal.orientation.z = 0.0
+        self.current_goal.orientation.w = 1.0
+        self.pose_pub.publish(self.current_goal)
+        self.get_logger().info(f'Published initial goal: x={self.current_goal.position.x}, y={self.current_goal.position.y}, z={self.current_goal.position.z}')
+
+    def odom_callback(self, msg):
+        self.current_position[0] = msg.pose.pose.position.x
+        self.current_position[1] = msg.pose.pose.position.y
+        self.get_logger().info(f'Current position updated: x={self.current_position[0]}, y={self.current_position[1]}')
 
     def lidar_callback(self, msg):
-        # Convertir la lista recibida a un arreglo numpy y reshape a un arreglo de Nx2
+        # Convert the received list to a numpy array and reshape to an Nx2 array
         lidar_data = np.array(msg.data).reshape(-1, 2)
 
-        # Calcular la distancia de cada punto al origen (0,0)
-        distances = np.linalg.norm(lidar_data, axis=1)
+        # Check if the new lidar data is different from the last lidar data
+        if not np.array_equal(lidar_data, self.last_lidar_data):
+            self.last_lidar_data = lidar_data
+            self.get_logger().info(f'New lidar data received: {lidar_data}')
 
-        # Encontrar el índice del punto más alejado
-        furthest_index = np.argmax(distances)
+            # Calculate the distance of each point to the origin (0,0)
+            distances = np.linalg.norm(lidar_data, axis=1)
 
-        # Guardar el punto más alejado
-        self.furthest_point = lidar_data[furthest_index]
-        self.get_logger().info(f'Punto más alejado: {self.furthest_point}')
+            # Find the index of the furthest point
+            furthest_index = np.argmax(distances)
 
-    def publish_pose(self):
+            # Update the furthest point
+            self.furthest_point = lidar_data[furthest_index]
+
+            # Publish the new goal based on the furthest point
+            self.update_and_publish_goal()
+
+    def update_and_publish_goal(self):
         if self.furthest_point is not None:
-            # Crear el mensaje Pose con la coordenada más alejada
-            pose = Pose()
-            pose.position.x = float(self.furthest_point[0])
-            pose.position.y = float(self.furthest_point[1])
-            pose.position.z = 0.0  # Asumimos que z es 0 en un entorno 2D
-            pose.orientation.x = 0.0
-            pose.orientation.y = 0.0
-            pose.orientation.z = 0.0
-            pose.orientation.w = 1.0
+            # Create a Pose message with the furthest point as the goal
+            self.current_goal.position.x = self.current_position[0] + float(self.furthest_point[0])
+            self.current_goal.position.y = self.current_position[1] + float(self.furthest_point[1])
+            self.current_goal.position.z = 0.0  # Assume z is 0 in a 2D environment
+            self.current_goal.orientation.x = 0.0
+            self.current_goal.orientation.y = 0.0
+            self.current_goal.orientation.z = 0.0
+            self.current_goal.orientation.w = 1.0
 
-            # Publicar el mensaje Pose
-            self.pose_pub.publish(pose)
-            self.get_logger().info(f'Publicando goal: x={pose.position.x}, y={pose.position.y}')
+            # Publish the Pose message
+            self.pose_pub.publish(self.current_goal)
+            self.get_logger().info(f'Published new goal: x={self.current_goal.position.x}, y={self.current_goal.position.y}')
 
 def main(args=None):
     rclpy.init(args=args)

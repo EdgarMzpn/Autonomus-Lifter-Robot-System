@@ -54,7 +54,7 @@ def generate_launch_description():
             name='velocity_control'
     )
 
-    trayectory = Node(
+    trajectory = Node(
         package='puzzlebot_challenge',
         executable='trajectory_control',
         name='trajectory_control'
@@ -81,7 +81,7 @@ def generate_launch_description():
         localisation,
         joint_state, 
         controller,
-        #trayectory,
+        trajectory,
         simlulation,
         goal
     ])
