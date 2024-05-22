@@ -56,13 +56,6 @@ echo "Installing transforms3d"
 pip install transforms3d
 echo "Installation complete"
 
-# Gazebo Installation
-echo "Installing Gazebo"
-sudo apt install -y ros-humble-gazebo-ros-pkgs
-sudo apt install -y ros-humble-controller-manager
-sudo apt install -y ros-humble-transmission-interface
-echo "Gazebo is installed"
-
 # Installing ROS2 Lidar package
 echo "Installing the ROS2 Lidar package"
 cd ~/ros2_ws/src
@@ -83,5 +76,5 @@ echo "Finished installing Slam Toolbox"
 
 #Installing Nav2 requiring packages
 echo "Installing Nav2 missing packages"
-sudo apt install ros-humble-nav2-bringup
+sudo apt install -y ros-humble-nav2-bringup
 echo "Installation completed."
