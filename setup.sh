@@ -76,5 +76,5 @@ echo "Finished installing Slam Toolbox"
 
 #Installing Nav2 requiring packages
 echo "Installing Nav2 missing packages"
-sudo apt install ros-humble-nav2-bringup
+sudo apt install -y ros-humble-nav2-bringup
 echo "Installation completed."
