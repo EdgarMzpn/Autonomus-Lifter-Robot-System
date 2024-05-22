@@ -73,7 +73,7 @@ class TrajectoryControl(Node):
 
     def arrive_callback(self, msg: Bool):
         self.arrive = msg.data
-        self.get_logger().info(f'Arrive status: {self.arrive}')
+        #self.get_logger().info(f'Arrive status: {self.arrive}')
 
     # States functions
     def wander(self):
@@ -93,7 +93,7 @@ class TrajectoryControl(Node):
     def got_to_goal(self):
         if self.goal:
             self.pose_pub.publish(self.goal)
-            self.get_logger().info(f'Publicando goal en pose_ideal: x={self.goal.position.x}, y={self.goal.position.y}')
+            #self.get_logger().info(f'Publicando goal en pose_ideal: x={self.goal.position.x}, y={self.goal.position.y}')
 
     def place_aruco(self):
         return 0

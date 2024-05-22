@@ -20,7 +20,7 @@ class LidarPublisherNode(Node):
 
     def arrive_callback(self, msg):
         self.arrive = msg.data
-        self.get_logger().info(f'Received arrive: {self.arrive}')
+        #self.get_logger().info(f'Received arrive: {self.arrive}')
         if self.arrive:
             if not self.second_publish_done:
                 self.send_second_coordinates()
@@ -37,7 +37,7 @@ class LidarPublisherNode(Node):
         
         # Publish the message
         self.publisher_.publish(msg)
-        self.get_logger().info('Publishing second new data: %s' % str(msg.data))
+        #self.get_logger().info('Publishing second new data: %s' % str(msg.data))
         self.second_publish_done = True
         self.timer.cancel()
 
@@ -51,7 +51,7 @@ class LidarPublisherNode(Node):
         
         # Publish the message
         self.publisher_.publish(msg)
-        self.get_logger().info('Publishing third new data: %s' % str(msg.data))
+        #self.get_logger().info('Publishing third new data: %s' % str(msg.data))
         self.third_publish_done = True
         self.timer.cancel()
 
@@ -67,7 +67,7 @@ class LidarPublisherNode(Node):
                 
                 # Publish the message
                 self.publisher_.publish(msg)
-                self.get_logger().info('Publishing: %s' % str(msg.data))
+                #self.get_logger().info('Publishing: %s' % str(msg.data))
         except Exception as e:
             self.get_logger().error('Error publishing LIDAR data: %s' % str(e))
 
