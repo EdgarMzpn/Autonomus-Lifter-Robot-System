@@ -1,151 +1,169 @@
 #!/usr/bin/env python3
 
-import rclpy
+import math
+from tf.transformations import euler_from_quaternion
 import numpy as np
-from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
-from math import atan2, pi, sqrt
+from sensor_msgs.msg import LaserScan
+import enum
 
-class Bug2Node():
-    def __init__(self, target, position):
-        self.xt = target[0]
-        self.yt = target[1]
-        self.xk = position[0]
-        self.yk = position[1]
-        self.thetak = position[2]
-        self.reached_target = False
-        self.state = "GO_TO_GOAL"
-        self.hit_point = None
-        self.leave_point = None
+# Define the state machine for the Bug2 algorithm
+class StateMachine(enum.Enum):
+    LOOK_AT_GOAL = 1
+    FOLLOW_LINE = 2
+    FOLLOW_WALL = 3
+    STOP = 4
 
-        # Initialize PID controller parameters
-        self.linear_kp = 0.15
-        self.linear_ki = 0.0
-        self.linear_kd = 0.05
-        self.linear_integral = 0.0
+class Bug2Controller:
+    def __init__(self, goal, start):
+        # Initialize various parameters and ROS node
+        self.yaw = 0.0
+        self.current_state = StateMachine.LOOK_AT_GOAL
 
-        self.angular_kp = 0.54
-        self.angular_ki = 0.0
-        self.angular_kd = 0.15
-        self.angular_integral = 0.0
+        # Initialize current pose of the robot
+        self.current_pose = PoseStamped()
+        self.current_pose.header.frame_id = "world"
+        self.current_pose.pose.position.x = start[0]
+        self.current_pose.pose.position.y = start[1]
 
-        self.prev_position_error = 0.0
-        self.prev_angle_error = 0.0
+        # Initialize starting pose of the robot
+        self.start_pose = PoseStamped()
+        self.start_pose.header.frame_id = "world"
+        self.start_pose.pose.position.x = start[0]
+        self.start_pose.pose.position.y = start[1]
 
-        self.total_position_error = 0.0
-        self.angle_error = 0.0
+        # Set the goal position for the robot
+        self.goal = PoseStamped()
+        self.goal.header.frame_id = "world"
+        self.goal.pose.position.x = goal[0]
+        self.goal.pose.position.y = goal[1]
 
-    def PID_Linear(self, error, prev_error):
-        P = self.linear_kp * error
-        self.linear_integral += error
-        I = self.linear_ki * self.linear_integral
-        derivative = error - prev_error
-        D = self.linear_kd * derivative
-        output = P + I + D
-        return output
+        self.cmd_vel = Twist()  # Velocity command
+        self.hitpoint = None  # Point where the robot hits an obstacle
+        self.distance_moved = 0.0  # Distance moved by the robot
 
-    def PID_Angular(self, error, prev_error):
-        P = self.angular_kp * error
-        self.angular_integral += error
-        I = self.angular_ki * self.angular_integral
-        derivative = error - prev_error
-        D = self.angular_kd * derivative
-        output = P + I + D
-        return output
-        
-    def resultant_error(self):
-        x_error = self.xt - self.xk
-        y_error = self.yt - self.yk
-        self.total_position_error = np.sqrt(x_error**2 + y_error**2)
-        desired_angle = np.arctan2(y_error, x_error)
-        self.angle_error = desired_angle - self.thetak
-    
+        # Distances to the nearest obstacles in different directions
+        self.front_distance = 0.0
+        self.frontL_distance = 0.0
+        self.left_distance = 0.0
 
-    def scan_callback(self, data):
-        if self.reached_target:
-            self.stop_robot()
-            return
-        
-        min_dist = min(data.ranges)
-        min_dist_idx = data.ranges.index(min_dist)
-        angle_to_obstacle = data.angle_min + min_dist_idx * data.angle_increment
-        angle_to_target = atan2(self.yt - self.yk, self.xt - self.xk)
-        distance_to_target = sqrt((self.xt - self.xk)**2 + (self.yt - self.yk)**2)
+        # Calculate line parameters (slope and y-intercept) from start to goal
+        self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+                self.goal.pose.position.x - self.start_pose.pose.position.x)
+        self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
 
-        if distance_to_target < 0.1:  # Threshold to consider target reached
-            self.reached_target = True
-            print("Target reached")
-            self.stop_robot()
-            return
 
-        if self.state == "GO_TO_GOAL":
-            if min_dist < 0.3:
-                self.state = "FOLLOW_WALL"
-                self.hit_point = (self.xk, self.yk)
-                print("Hit Point: ", self.hit_point)
-            else:
-                self.move_towards_goal(angle_to_target)
-                # print("Go to Goal")
-        elif self.state == "FOLLOW_WALL":
-            leave_distance = self.distance_to_line(self.xk, self.yk, self.xt, self.yt)
-            if min_dist >= 0.3 and leave_distance < 0.05:
-                self.state = "GO_TO_GOAL"
-                self.leave_point = (self.xk, self.yk)
-                print("Leave Point: ", self.leave_point)
-            else:
-                self.follow_wall(angle_to_obstacle, min_dist)
-                # print("Follow Wall")
+    def wrap_to_pi(self, angle):
+        # Wrap an angle to the range [-pi, pi]
+        if np.fabs(angle) > np.pi:
+            angle = angle - (2*np.pi*angle) / (np.fabs(angle))
+        return angle
 
-    def move_towards_goal(self, angle_to_target):
-        vel_msg = Twist()
-        self.resultant_error()
-        if abs(self.prev_angle_error) > 0.2:
-            vel_msg.linear.x = 0.0
-            vel_msg.angular.z = self.PID_Angular(self.angle_error, self.prev_angle_error)
+    def look_to_goal(self):
+        # Orient the robot towards the goal
+        quaternion = (self.current_pose.pose.orientation.x, self.current_pose.pose.orientation.y, self.current_pose.pose.orientation.z, self.current_pose.pose.orientation.w)
+        euler = euler_from_quaternion(quaternion)
+        self.yaw = euler[2]  # Get the current yaw of the robot
+
+        # Calculate the angle to the goal
+        angle_to_goal = math.atan2(self.goal.pose.position.y - self.current_pose.pose.position.y, self.goal.pose.position.x - self.current_pose.pose.position.x)
+        angle_error = self.wrap_to_pi(angle_to_goal - self.yaw)
+
+        # Rotate the robot towards the goal if the angle error is significant
+        if np.fabs(angle_error) > np.pi/90:
+            self.cmd_vel.angular.z = 0.5 if angle_error > 0 else -0.5
         else:
-            vel_msg.linear.x = self.PID_Linear(self.total_position_error, self.prev_position_error)
-            vel_msg.angular.z = 0.0
-        self.prev_position_error = self.total_position_error
-        self.prev_angle_error = self.angle_error
-        self.cmd_vel_pub.publish(vel_msg)
+            self.cmd_vel.angular.z = 0.0
+            self.current_state = StateMachine.FOLLOW_LINE  # Switch to FOLLOW_LINE state
 
-    def follow_wall(self, angle_to_obstacle, min_dist):
-        orientation_from_wall = angle_to_obstacle + pi/2
-        vel_msg = Twist()
-        print(min_dist)
-        if abs(0.15 - min_dist) > 0.05 and abs(orientation_from_wall) < 0.25:
-            vel_msg.linear.x = 0.05
-            vel_msg.angular.z = (0.5 * (0.15-min_dist))
-            print("off distance")
-        elif abs(orientation_from_wall) > 0.15:
-            vel_msg.linear.x = 0.05
-            vel_msg.angular.z = (1.0 * orientation_from_wall + (0.3 * (0.15-min_dist))) 
-            print("off orientation")
+
+    def move_to_goal(self):
+        # Move the robot towards the goal
+        if np.any((self.front_distance < 0.3)):  # Stop if an obstacle is detected in front
+            self.cmd_vel.linear.x = 0.0
+            self.cmd_vel.angular.z = 0.0
+            self.hitpoint = self.current_pose.pose.position  # Record the hitpoint
+            self.current_state = StateMachine.FOLLOW_WALL  # Switch to FOLLOW_WALL state
         else:
-            vel_msg.linear.x = 0.2 * min_dist
-            vel_msg.angular.z = (0.9 * orientation_from_wall + (0.3 * (0.15-min_dist)))
-            print("good")
-        self.cmd_vel_pub.publish(vel_msg)
+            self.cmd_vel.linear.x = 0.5
+            self.cmd_vel.angular.z = 0.0
 
-    def stop_robot(self):
-        vel_msg = Twist()
-        vel_msg.linear.x = 0.0
-        vel_msg.angular.z = 0.0
-        self.cmd_vel_pub.publish(vel_msg)
+    def follow_wall(self):
+        # Follow the wall until a certain condition is met
+        closestGoalLine_x = self.current_pose.pose.position.x
+        closestGoalLine_y = self.line_slope_m * self.current_pose.pose.position.x + self.line_slope_b
 
-    def distance_to_line(self, x, y, xt, yt):
-        # Calculate the perpendicular distance from (x, y) to the line connecting the start and goal (0,0) to (xt, yt)
-        num = abs((yt - 0) * x - (xt - 0) * y)
-        den = sqrt(yt**2 + xt**2)
-        return num / den
+        self.distance_moved = math.sqrt((self.current_pose.pose.position.x - self.hitpoint.x)**2 + (self.current_pose.pose.position.y - self.hitpoint.y)**2)
+        distance_to_line = math.sqrt((closestGoalLine_x - self.current_pose.pose.position.x)**2 + (closestGoalLine_y - self.current_pose.pose.position.y)**2)
+
+        if distance_to_line < 0.1 and self.distance_moved > 0.5:
+            distance_to_goal = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
+            hitpoint_distance_to_goal = math.sqrt((self.goal.pose.position.x - self.hitpoint.x)**2 + (self.goal.pose.position.y - self.hitpoint.y)**2)
+
+            if hitpoint_distance_to_goal > distance_to_goal:
+                self.cmd_vel.linear.x = 0.0
+                self.cmd_vel.angular.z = 0.0
+                self.current_state = StateMachine.LOOK_AT_GOAL  # Switch to LOOK_AT_GOAL state
+                return
+        elif np.any((self.front_distance < 0.3)):
+            self.cmd_vel.linear.x = 0.0
+            self.cmd_vel.angular.z = -0.3
+        elif np.any((self.frontL_distance >= 0.2)):
+            self.cmd_vel.linear.x = 0.05
+            self.cmd_vel.angular.z = 0.3
+        else:
+            self.cmd_vel.linear.x = 0.3
+            self.cmd_vel.angular.z = 0.0
 
 
-if __name__ == '__main__':
-    try:
-        xt = 1.45
-        yt = 1.2
-        bug2_node = Bug2Node(xt, yt)
-        bug2_node.run()
-    except rospy.ROSInterruptException:
-        pass
+    # def goal_callback(self, msg):
+    #     # Update the goal when a new goal message is received
+    #     self.goal = msg
+    #     self.start_pose = self.current_pose
+
+    #     self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+    #                 self.goal.pose.position.x - self.start_pose.pose.position.x)
+    #     self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+    #     self.current_state = StateMachine.LOOK_AT_GOAL  # Switch to LOOK_AT_GOAL state
+
+    def odom_callback(self, msg):
+        # Update the current pose based on odometry data
+        self.current_pose.pose = msg.pose.pose
+
+    def scan_callback(self, msg):
+        # Update the distances to obstacles based on laser scan data
+        data = np.array(msg.ranges)
+        self.front_distance = np.min(data[141:220])
+        self.frontL_distance = np.min(data[221:310])
+
+    def stop(self):
+        # Stop the robot
+        cmd_vel = Twist()
+        cmd_vel.linear.x = 0.0
+        cmd_vel.angular.z = 0.0
+        self.cmd_vel_pub.publish(cmd_vel)
+
+    def run(self, odometry, scan):
+        self.odom_callback(odometry)
+        self.scan_callback(scan)
+      
+        if self.current_state is StateMachine.LOOK_AT_GOAL:
+            self.look_to_goal()
+        elif self.current_state is StateMachine.FOLLOW_LINE:
+            self.move_to_goal()
+        elif self.current_state is StateMachine.FOLLOW_WALL:
+            self.follow_wall()
+        elif self.current_state is StateMachine.STOP:
+            self.cmd_vel.linear.x = 0.0
+            self.cmd_vel.angular.z = 0.0
+
+        goal_distance = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
+
+        if goal_distance < 0.1:  # Stop if the goal is reached
+            self.current_state = StateMachine.STOP
+            self.cmd_vel.linear.x = 0.0
+            self.cmd_vel.angular.z = 0.0
+
+        return self.cmd_vel # Publish the velocity command
+
