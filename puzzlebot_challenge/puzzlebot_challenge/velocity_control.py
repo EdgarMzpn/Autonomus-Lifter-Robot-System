@@ -98,6 +98,9 @@ class Velocity_Control(Node):
 
         desired_angle = np.arctan2(y_error, x_error)
         self.angle_error = desired_angle - self.current_angle
+        
+        # Normalize angle to be within [-π, π]
+        self.angle_error = np.arctan2(np.sin(self.angle_error), np.cos(self.angle_error))
 
     def velocity_control(self):
         #Get time difference 
@@ -127,7 +130,9 @@ class Velocity_Control(Node):
         self.cmd_vel_pub.publish(self.output_velocity)
         self.error_pub.publish(self.output_error)
 
-        if self.total_position_error < 0.2 and self.total_position_error > -0.2:
+        tolerance = 0.2
+
+        if self.total_position_error < tolerance and self.total_position_error > -tolerance:
             self.arrive.data = True
         else:
             self.arrive.data = False
