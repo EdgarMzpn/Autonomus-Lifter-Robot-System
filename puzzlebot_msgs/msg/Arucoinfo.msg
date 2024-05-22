@@ -1,3 +1,4 @@
 string tag
-float32 depth
+string id
+geometry_msgs/Point point
 int32 offset
