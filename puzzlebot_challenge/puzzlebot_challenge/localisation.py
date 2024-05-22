@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import rclpy
-from rclpy.node import Node
+import math
 import numpy as np
+from rclpy.node import Node
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
@@ -23,6 +24,10 @@ class Localisation(Node):
         self.l = 0.19               # Wheelbase
         self.r = 0.05               # Radius of the Wheel
         
+        # Constants for error model
+        self.kr = 0.00001  # Error coefficient for the right wheel
+        self.kl = 0.00001  # Error coefficient for the left wheel
+
         # Starting pose for the puzzlebot
         self.angle = 0.0
         self.positionx = 0.0
@@ -61,16 +66,44 @@ class Localisation(Node):
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-        self.angle = self.angle % 6.28
         self.angle += self.angular_speed * self.dt
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
+        # Define Jacobian matrix H_k
+        H_k = np.array([
+            [1, 0, -self.dt * self.linear_speed * np.sin(self.angle)],
+            [0, 1, self.dt * self.linear_speed * np.cos(self.angle)],
+            [0, 0, 1]
+        ])
+
+        # Define the error matrix Q_k
+        Q_k = np.diag([self.kr * abs(self.wr) * self.dt, 
+                       self.kl * abs(self.wl) * self.dt, 
+                       (self.kr * abs(self.wr) + self.kl * abs(self.wl)) * self.dt])
+
+        # Update covariance matrix using the previous covariance matrix
+        if not hasattr(self, 'sigma'):
+            self.sigma = np.eye(3)  # Initializes the covariance matrix if it hasn't been defined
+
+        # Predict the new covariance matrix
+        self.sigma = H_k.dot(self.sigma).dot(H_k.T) + Q_k
+
+        # self.get_logger().info(f"Covariance Matrix:\n{self.sigma}")
+        # self.get_logger().info("Matrix Q_k: {}".format(Q_k))
+
+        # Extend 3x3 matrix to 6x6 for ROS compatibility
+        sigma_full = np.zeros((6, 6))
+        sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
+        sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
+        sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
+        sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
+
         # Publish odometry via odom topic
         odom = Odometry()
-        odom.header.stamp = self.current_time 
-        odom.header.frame_id = 'world'
-        odom.child_frame_id = '/base_link'
+        odom.header.stamp = self.current_time
+        odom.header.frame_id = "odom"  # Set the frame id to "odom"
+        odom.child_frame_id = "base_link"  # Set the child frame id to "base_link"
         odom.pose.pose.position.x = self.positionx
         odom.pose.pose.position.y = self.positiony  
         q = quaternion_from_euler(0., 0., self.angle)
@@ -78,6 +111,7 @@ class Localisation(Node):
         odom.pose.pose.orientation.y = q[1]
         odom.pose.pose.orientation.z = q[2]
         odom.pose.pose.orientation.w = q[3]
+        odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
