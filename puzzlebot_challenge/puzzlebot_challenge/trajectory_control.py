@@ -9,15 +9,13 @@ import matplotlib.pyplot as plt
 from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 import enum
-from bug2 import Bug2Controller
-
+from puzzlebot_challenge.bug2 import Bug2Controller
 class StateMachine(enum.Enum):
     FIND_CORNER = 1
     WANDER = 2
     GO_TO_TARGET = 3
     HANDLE_OBJECT = 4
     STOP = 5
-
 
 class TrajectoryControl(Node):
     def __init__(self):
@@ -29,20 +27,20 @@ class TrajectoryControl(Node):
         
         self.current_pose = PoseStamped()
         self.current_pose.header.frame_id = "world"
-        self.current_pose.position.x = 1.0
-        self.current_pose.position.y = 0.0
-        self.current_pose.orientation.x = 0.0
-        self.current_pose.orientation.y = 0.0
-        self.current_pose.orientation.z = 0.0
-        self.current_pose.orientation.w = 1.0
+        self.current_pose.pose.position.x = 1.0
+        self.current_pose.pose.position.y = 0.0
+        self.current_pose.pose.orientation.x = 0.0
+        self.current_pose.pose.orientation.y = 0.0
+        self.current_pose.pose.orientation.z = 0.0
+        self.current_pose.pose.orientation.w = 1.0
         self.current_angle = 0.0
 
         self.current_state = StateMachine.FIND_CORNER
         
         self.discharge_area = PoseStamped()
         self.discharge_area.header.frame_id = "world"
-        self.discharge_area.position.x = 0.0
-        self.discharge_area.position.y = 0.0
+        self.discharge_area.pose.position.x = 0.0
+        self.discharge_area.pose.position.y = 0.0
 
         self.goal = PoseStamped()
         self.goal.header.frame_id = "world"
@@ -67,8 +65,8 @@ class TrajectoryControl(Node):
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
-    def odometry_callback(self, msg):
-        self.current_pose.pose = msg
+    def odometry_callback(self, msg: Odometry):
+        self.current_pose.pose = msg.pose.pose
         self.target.odom_callback(msg)
 
     def aruco_callback(self, msg):
@@ -96,8 +94,8 @@ class TrajectoryControl(Node):
         if self.current_state is StateMachine.GO_TO_TARGET:
             if self.aruco_info.point.z < 0.10:
                 if self.aruco_info.aruco_array[0].id == self.target_area_id:
-                    self.discharge_area.position.x = self.current_position.position.x + self.aruco_info.point.z
-                    self.discharge_area.position.y = self.current_position.position.y + self.aruco_info.point.x
+                    self.discharge_area.pose.position.x = self.current_position.position.x + self.aruco_info.point.z
+                    self.discharge_area.pose.position.y = self.current_position.position.y + self.aruco_info.point.x
                     self.current_state = StateMachine.WANDER
                 else:
                     self.current_state = StateMachine.HANDLE_OBJECT
@@ -115,13 +113,6 @@ class TrajectoryControl(Node):
         
         self.there_is_aruco = False
         
-
-
-            
-
-
-
-
 def main(args=None):
     rclpy.init(args=args)
     slam_node = TrajectoryControl()

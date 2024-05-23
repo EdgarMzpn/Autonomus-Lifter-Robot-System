@@ -47,9 +47,9 @@ class Bug2Controller():
         self.left_distance = 0.0
 
         # Calculate line parameters (slope and y-intercept) from start to goal
-        self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
-                self.goal.pose.position.x - self.start_pose.pose.position.x)
-        self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+        # self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+        #         self.goal.pose.position.x - self.start_pose.pose.position.x)
+        # self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
 
         # Set up shutdown behavior
 
