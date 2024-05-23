@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-
+import rclpy
+from rclpy.node import Node
 import math
 from tf_transformations import euler_from_quaternion
 import numpy as np
@@ -10,41 +11,42 @@ import enum
 
 # Define the state machine for the Bug2 algorithm
 class StateMachine(enum.Enum):
-    LOOK_AT_GOAL = 1
+    LOOK_TOGOAL = 1
     FOLLOW_LINE = 2
-    FOLLOW_WALL = 3
+    WALL_FOLLOW = 3
     STOP = 4
 
-class Bug2Controller:
-    def __init__(self, goal, start):
+class Bug2Controller(Node):
+    def __init__(self):
+        super().__init__('Odometry')
         # Initialize various parameters and ROS node
         self.yaw = 0.0
-        self.current_state = StateMachine.LOOK_AT_GOAL
+        self.current_state = StateMachine.LOOK_TOGOAL
 
         # Initialize current pose of the robot
         self.current_pose = PoseStamped()
         self.current_pose.header.frame_id = "world"
-        self.current_pose.pose.position.x = start[0]
-        self.current_pose.pose.position.y = start[1]
+        self.current_pose.pose.position.x = 0.
+        self.current_pose.pose.position.y = 0.
 
         # Initialize starting pose of the robot
         self.start_pose = PoseStamped()
         self.start_pose.header.frame_id = "world"
-        self.start_pose.pose.position.x = start[0]
-        self.start_pose.pose.position.y = start[1]
+        self.start_pose.pose.position.x = 0.
+        self.start_pose.pose.position.y = 0.
 
         # Set the goal position for the robot
         self.goal = PoseStamped()
         self.goal.header.frame_id = "world"
-        self.goal.pose.position.x = goal[0]
-        self.goal.pose.position.y = goal[1]
+        self.goal.pose.position.x = 0.5
+        self.goal.pose.position.y = 0.5
 
         self.cmd_vel = Twist()  # Velocity command
         self.hitpoint = None  # Point where the robot hits an obstacle
         self.distance_moved = 0.0  # Distance moved by the robot
 
         # Distances to the nearest obstacles in different directions
-        self.front_distance = 0.0
+        self.front_distance = 1.0
         self.frontL_distance = 0.0
         self.left_distance = 0.0
 
@@ -52,6 +54,19 @@ class Bug2Controller:
         self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
                 self.goal.pose.position.x - self.start_pose.pose.position.x)
         self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+
+        # Initialize ROS publisher for velocity commands
+        self.cmd_vel_pub = self.create_publisher( Twist, '/cmd_vel', 1)
+
+        # Initialize ROS subscribers for odometry, goal, and laser scan data
+        self.create_subscription( Odometry, '/odom', self.odom_callback, 1)
+        self.create_subscription( PoseStamped, '/goal', self.goal_callback, 1)
+        self.create_subscription( LaserScan, '/filtered_scan', self.scan_callback, 1)
+
+        self.start_time = self.get_clock().now()
+        time_period = 0.1
+        self.timer = self.create_timer(time_period, self.run)
+        # Set up shutdown behavior
 
 
     def wrap_to_pi(self, angle):
@@ -77,6 +92,7 @@ class Bug2Controller:
             self.cmd_vel.angular.z = 0.0
             self.current_state = StateMachine.FOLLOW_LINE  # Switch to FOLLOW_LINE state
 
+        self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
 
     def move_to_goal(self):
         # Move the robot towards the goal
@@ -84,10 +100,12 @@ class Bug2Controller:
             self.cmd_vel.linear.x = 0.0
             self.cmd_vel.angular.z = 0.0
             self.hitpoint = self.current_pose.pose.position  # Record the hitpoint
-            self.current_state = StateMachine.FOLLOW_WALL  # Switch to FOLLOW_WALL state
+            self.current_state = StateMachine.WALL_FOLLOW  # Switch to WALL_FOLLOW state
         else:
             self.cmd_vel.linear.x = 0.5
             self.cmd_vel.angular.z = 0.0
+
+        self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
 
     def follow_wall(self):
         # Follow the wall until a certain condition is met
@@ -104,28 +122,29 @@ class Bug2Controller:
             if hitpoint_distance_to_goal > distance_to_goal:
                 self.cmd_vel.linear.x = 0.0
                 self.cmd_vel.angular.z = 0.0
-                self.current_state = StateMachine.LOOK_AT_GOAL  # Switch to LOOK_AT_GOAL state
+                self.current_state = StateMachine.LOOK_TOGOAL  # Switch to LOOK_TOGOAL state
                 return
         elif np.any((self.front_distance < 0.3)):
             self.cmd_vel.linear.x = 0.0
-            self.cmd_vel.angular.z = -0.3
+            self.cmd_vel.angular.z = -0.5
         elif np.any((self.frontL_distance >= 0.2)):
-            self.cmd_vel.linear.x = 0.05
-            self.cmd_vel.angular.z = 0.3
+            self.cmd_vel.linear.x = 0.1
+            self.cmd_vel.angular.z = 0.5
         else:
-            self.cmd_vel.linear.x = 0.3
+            self.cmd_vel.linear.x = 0.5
             self.cmd_vel.angular.z = 0.0
 
+        self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
 
-    # def goal_callback(self, msg):
-    #     # Update the goal when a new goal message is received
-    #     self.goal = msg
-    #     self.start_pose = self.current_pose
+    def goal_callback(self, msg):
+        # Update the goal when a new goal message is received
+        self.goal = msg
+        self.start_pose = self.current_pose
 
-    #     self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
-    #                 self.goal.pose.position.x - self.start_pose.pose.position.x)
-    #     self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
-    #     self.current_state = StateMachine.LOOK_AT_GOAL  # Switch to LOOK_AT_GOAL state
+        self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+                    self.goal.pose.position.x - self.start_pose.pose.position.x)
+        self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+        self.current_state = StateMachine.LOOK_TOGOAL  # Switch to LOOK_TOGOAL state
 
     def odom_callback(self, msg):
         # Update the current pose based on odometry data
@@ -144,26 +163,32 @@ class Bug2Controller:
         cmd_vel.angular.z = 0.0
         self.cmd_vel_pub.publish(cmd_vel)
 
-    def run(self, odometry, scan):
-        self.odom_callback(odometry)
-        self.scan_callback(scan)
-      
-        if self.current_state is StateMachine.LOOK_AT_GOAL:
+    def run(self):
+        # Main loop to control the robot      
+        if self.current_state is StateMachine.LOOK_TOGOAL:
             self.look_to_goal()
         elif self.current_state is StateMachine.FOLLOW_LINE:
             self.move_to_goal()
-        elif self.current_state is StateMachine.FOLLOW_WALL:
+        elif self.current_state is StateMachine.WALL_FOLLOW:
             self.follow_wall()
         elif self.current_state is StateMachine.STOP:
             self.cmd_vel.linear.x = 0.0
             self.cmd_vel.angular.z = 0.0
+            print("Found goal!")
 
+        self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
         goal_distance = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
 
-        if goal_distance < 0.1:  # Stop if the goal is reached
+        if goal_distance < 0.15:  # Stop if the goal is reached
             self.current_state = StateMachine.STOP
-            self.cmd_vel.linear.x = 0.0
-            self.cmd_vel.angular.z = 0.0
 
-        return self.cmd_vel # Publish the velocity command
 
+def main(args=None):
+    rclpy.init(args=args)
+    bug = Bug2Controller()
+    rclpy.spin(bug)
+    bug.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
