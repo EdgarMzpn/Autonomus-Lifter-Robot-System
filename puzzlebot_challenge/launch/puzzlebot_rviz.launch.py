@@ -75,7 +75,7 @@ def generate_launch_description():
         localisation,
         joint_state, 
         # controller
-        #trayectory,
+        trayectory,
         #simlulation
     ])
 

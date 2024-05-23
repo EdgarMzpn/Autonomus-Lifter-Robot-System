@@ -18,7 +18,7 @@ class StateMachine(enum.Enum):
 
 class Bug2Controller(Node):
     def __init__(self):
-        super().__init__('Odometry')
+        super().__init__('Bug2')
         # Initialize various parameters and ROS node
         self.yaw = 0.0
         self.current_state = StateMachine.LOOK_TOGOAL
