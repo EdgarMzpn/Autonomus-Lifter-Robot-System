@@ -66,9 +66,6 @@ class Localisation(Node):
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-        self.angle += self.angular_speed * self.dt
-        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
-        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
         # Define Jacobian matrix H_k
         H_k = np.array([
@@ -82,6 +79,9 @@ class Localisation(Node):
                        self.kl * abs(self.wl) * self.dt, 
                        (self.kr * abs(self.wr) + self.kl * abs(self.wl)) * self.dt])
 
+        self.angle += self.angular_speed * self.dt #+ Q_k[2][2]
+        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt #+ Q_k[0][0]
+        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt #+ Q_k[1][1]
         # Update covariance matrix using the previous covariance matrix
         if not hasattr(self, 'sigma'):
             self.sigma = np.eye(3)  # Initializes the covariance matrix if it hasn't been defined
