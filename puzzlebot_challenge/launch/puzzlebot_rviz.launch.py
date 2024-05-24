@@ -75,8 +75,8 @@ def generate_launch_description():
         localisation,
         joint_state, 
         # controller
-        trayectory,
-        # simlulation
+        # trayectory,
+        #simlulation
     ])
 
 if __name__ == '__main__':

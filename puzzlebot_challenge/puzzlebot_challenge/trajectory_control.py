@@ -7,6 +7,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
+from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 import enum
 from puzzlebot_challenge.bug2 import Bug2Controller
@@ -22,6 +23,7 @@ class TrajectoryControl(Node):
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(LaserScan, '/filtered_scan', self.lidar_callback, 10)
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
+        self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         
         self.current_pose = PoseStamped()
@@ -33,6 +35,7 @@ class TrajectoryControl(Node):
         self.current_pose.pose.orientation.z = 0.0
         self.current_pose.pose.orientation.w = 1.0
         self.current_angle = 0.0
+
 
         self.current_state = StateMachine.FIND_CORNER
         
@@ -47,6 +50,9 @@ class TrajectoryControl(Node):
         self.goal.pose.position.y = 2.0
 
         self.cmd_vel = 0.0
+
+        self.there_is_aruco = False
+        self.aruco_info = ArucoArray()
 
         self.there_is_aruco = False
         self.aruco_info = ArucoArray()
@@ -78,6 +84,10 @@ class TrajectoryControl(Node):
 
     def run(self):
         
+        # if self.current_state is StateMachine.FIND_CORNER:
+        #     if self.corner_finder.finish:
+        #         self.current_state = StateMachine.WANDER
+        #     else: self.corner_finder.run()
         # if self.current_state is StateMachine.FIND_CORNER:
         #     if self.corner_finder.finish:
         #         self.current_state = StateMachine.WANDER

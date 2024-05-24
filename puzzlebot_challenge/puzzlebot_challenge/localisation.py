@@ -2,6 +2,7 @@
 import rclpy
 import math
 import numpy as np
+from numpy.linalg import inv
 from rclpy.node import Node
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Quaternion, Pose
@@ -25,15 +26,15 @@ class Localisation(Node):
         self.r = 0.05               # Radius of the Wheel
         
         # Constants for error model
-        self.kr = 0.00001  # Error coefficient for the right wheel
-        self.kl = 0.00001  # Error coefficient for the left wheel
+        self.kr = 0.00001  #TODO Error coefficient for the right wheel
+        self.kl = 0.00001  #TODO Error coefficient for the left wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
+        self.landmarks = [[2.5, 0.5]] 
 
-        
         # Subscribers
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl, qos_profile_sensor_data)
         self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr, qos_profile_sensor_data)
@@ -66,11 +67,17 @@ class Localisation(Node):
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
+    def map_callback(self, msg):
+        placeholder = msg  # Setup callback for landmarks
+
+    def kalman_filter(self, previous_pose):
+
+        u_estimation = np.array([[self.positionx],[self.positiony],[self.angle]])
 
         # Define Jacobian matrix H_k
         H_k = np.array([
-            [1, 0, -self.dt * self.linear_speed * np.sin(self.angle)],
-            [0, 1, self.dt * self.linear_speed * np.cos(self.angle)],
+            [1, 0, -self.dt * self.linear_speed * np.sin(previous_pose["angle"])],
+            [0, 1, self.dt * self.linear_speed * np.cos(previous_pose["angle"])],
             [0, 0, 1]
         ])
 
@@ -87,17 +94,64 @@ class Localisation(Node):
             self.sigma = np.eye(3)  # Initializes the covariance matrix if it hasn't been defined
 
         # Predict the new covariance matrix
-        self.sigma = H_k.dot(self.sigma).dot(H_k.T) + Q_k
+        self.sigma_estimation = H_k.dot(self.sigma).dot(H_k.T) + Q_k
 
-        # self.get_logger().info(f"Covariance Matrix:\n{self.sigma}")
+        # self.get_logger().info(f"Covariance Matrix:\n{self.sigma_estimation}")
         # self.get_logger().info("Matrix Q_k: {}".format(Q_k))
 
         # Extend 3x3 matrix to 6x6 for ROS compatibility
+
+        x_diff = self.landmarks[0][0] - self.positionx
+        y_diff = self.landmarks[0][1] - self.positiony
+
+        z_estimation = np.array([[np.sqrt(x_diff**2 + y_diff**2)],
+                                 [np.arctan2(y_diff, x_diff)-self.angle]])
+        
+        R_k = np.array([[0.1, 0.0],
+                        [0.0, 0.2]])  # TODO: Change for equations from mapping
+
+        G_k = np.array([    [-x_diff/np.sqrt(z_estimation[0][0]),     -y_diff/np.sqrt(z_estimation[0][0]),   0],
+                            [y_diff/z_estimation[0][0],                -x_diff/z_estimation[0][0],             0]])
+        
+        Z_true = G_k.dot(self.sigma_estimation).dot(G_k.T) + R_k
+
+        K_k = (self.sigma_estimation).dot(G_k.T).dot(inv(Z_true))
+
+        u_true = u_estimation + K_k.dot(Z_true-z_estimation)
+
+        self.sigma = (np.diag([1,1,1])-K_k.dot(G_k)).dot(self.sigma_estimation)
+        
+
         sigma_full = np.zeros((6, 6))
         sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
         sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
         sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
         sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
+
+        print(sigma_full)
+
+        return sigma_full, u_true
+
+    def odom_reading(self):
+
+        #Get time difference 
+        self.current_time = self.start_time.to_msg()
+        self.duration = self.get_clock().now() - self.start_time
+
+        # Convert the duration to a float value (in seconds)
+        self.dt = self.duration.nanoseconds * 1e-9
+        
+        self.linear_speed = self.r * (self.wr + self.wl) / 2.
+        self.angular_speed = self.r * (self.wr - self.wl) / self.l
+
+        previous_pose = {"x": self.positionx, "y": self.positiony, "angle": self.angle}
+
+        self.angle += self.angular_speed * self.dt
+        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
+        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
+
+        sigma_full, u_true = self.kalman_filter(previous_pose)
+        
 
         # Publish odometry via odom topic
         odom = Odometry()
