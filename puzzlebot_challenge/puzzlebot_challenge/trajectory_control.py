@@ -16,7 +16,6 @@ class StateMachine(enum.Enum):
     GO_TO_TARGET = 3
     HANDLE_OBJECT = 4
     STOP = 5
-
 class TrajectoryControl(Node):
     def __init__(self):
         super().__init__('Trajectory_Control')
@@ -60,7 +59,6 @@ class TrajectoryControl(Node):
         # self.wander = Wander()
         # self.handle_object = Handle()
         self.target = Bug2Controller()
-        self.target.goal_callback(self.goal)
         
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
@@ -78,7 +76,6 @@ class TrajectoryControl(Node):
         self.distances = np.array(msg.ranges)
         self.target.scan_callback(msg)
 
-
     def run(self):
         
         # if self.current_state is StateMachine.FIND_CORNER:
@@ -91,15 +88,24 @@ class TrajectoryControl(Node):
         #         self.current_state = StateMachine.GO_TO_TARGET
         #     else: self.wander.run()
 
+        self.current_state = StateMachine.GO_TO_TARGET
+        self.aruco_info.aruco_array.append(Arucoinfo())
+        self.aruco_info.aruco_array[0].point.z = 0.0
+        self.get_logger().info(f'GOAL: x={self.goal.pose.position}')
+        self.target.goal_callback(self.goal)
+
         if self.current_state is StateMachine.GO_TO_TARGET:
-            if self.aruco_info.point.z < 0.10:
+            if self.aruco_info.aruco_array[0].point.z < 0.10:
                 if self.aruco_info.aruco_array[0].id == self.target_area_id:
                     self.discharge_area.pose.position.x = self.current_position.position.x + self.aruco_info.point.z
                     self.discharge_area.pose.position.y = self.current_position.position.y + self.aruco_info.point.x
                     self.current_state = StateMachine.WANDER
                 else:
                     self.current_state = StateMachine.HANDLE_OBJECT
-            else: self.target.run()
+            else:
+                velocity_msg = self.target.run()
+                self.get_logger().info(f'VELOCITY: x={self.velocity_msg.linear}')
+                self.velocity_pub.publish(velocity_msg)
 
         # elif self.current_state is StateMachine.HANDLE_OBJECT:
         #     if self.handle.picked:

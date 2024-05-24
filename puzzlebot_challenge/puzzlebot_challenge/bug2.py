@@ -160,7 +160,7 @@ class Bug2Controller():
             self.cmd_vel.angular.z = 0.0
             print("Found goal!")
 
-        self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
+        # self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
         goal_distance = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
 
         if goal_distance < 0.15:  # Stop if the goal is reached

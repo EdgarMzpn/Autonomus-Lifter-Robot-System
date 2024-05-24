@@ -76,7 +76,7 @@ def generate_launch_description():
         joint_state, 
         # controller
         trayectory,
-        #simlulation
+        # simlulation
     ])
 
 if __name__ == '__main__':
