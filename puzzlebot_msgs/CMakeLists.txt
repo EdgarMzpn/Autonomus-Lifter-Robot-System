@@ -16,7 +16,9 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Arucoinfo.msg"
-  "msg/ArucoArray.msg" 
+  "msg/ArucoArray.msg"
+  "msg/Landmark.msg"
+  "msg/LandmarkList.msg"
   DEPENDENCIES geometry_msgs std_msgs# Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )
 

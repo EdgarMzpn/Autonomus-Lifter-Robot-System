@@ -40,7 +40,7 @@ setup(
             'oval_pose = puzzlebot_challenge.oval_pose_publisher:main',
             'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
             'bug2 = puzzlebot_challenge.bug2:main',
-            'corner_detection = puzzlebot_challenge.corner_detection:main',
+            'map_corners = puzzlebot_challenge.mapping_corners:main',
         ],
     },
 )
