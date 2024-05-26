@@ -65,6 +65,18 @@ def generate_launch_description():
         executable='obstacule_sim',
         name='obstacule_sim'
     )
+    
+    aruco = Node(
+        package='puzzlebot_challenge',
+        executable='aruco',
+        name='aruco'
+    )
+    
+    bug2 = Node(
+        package='puzzlebot_challenge',
+        executable='bug2',
+        name='Bug2'
+    )
 
 
     return LaunchDescription([
@@ -75,7 +87,9 @@ def generate_launch_description():
         localisation,
         joint_state, 
         # controller
-        # trayectory,
+        trayectory,
+        aruco,
+        bug2,
         #simlulation
     ])
 

@@ -39,7 +39,7 @@ setup(
             'rplidar = puzzlebot_challenge.filter_scan:main',
             'oval_pose = puzzlebot_challenge.oval_pose_publisher:main',
             'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
-            'bug2 = puzzlebot_challenge.bug:main',
+            'bug2 = puzzlebot_challenge.bug2:main',
             'corner_detection = puzzlebot_challenge.corner_detection:main',
         ],
     },

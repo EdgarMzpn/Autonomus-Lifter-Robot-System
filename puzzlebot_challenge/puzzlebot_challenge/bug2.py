@@ -4,6 +4,7 @@ from rclpy.node import Node
 import math
 from tf_transformations import euler_from_quaternion
 import numpy as np
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
@@ -38,8 +39,8 @@ class Bug2Controller(Node):
         # Set the goal position for the robot
         self.goal = PoseStamped()
         self.goal.header.frame_id = "world"
-        self.goal.pose.position.x = 0.5
-        self.goal.pose.position.y = 0.5
+        self.goal.pose.position.x = 0.0
+        self.goal.pose.position.y = 0.0
 
         self.cmd_vel = Twist()  # Velocity command
         self.hitpoint = None  # Point where the robot hits an obstacle
@@ -51,9 +52,9 @@ class Bug2Controller(Node):
         self.left_distance = 0.0
 
         # Calculate line parameters (slope and y-intercept) from start to goal
-        self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
-                self.goal.pose.position.x - self.start_pose.pose.position.x)
-        self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+        # self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+        #         self.goal.pose.position.x - self.start_pose.pose.position.x)
+        # self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
 
         # Initialize ROS publisher for velocity commands
         self.cmd_vel_pub = self.create_publisher( Twist, '/cmd_vel', 1)
@@ -62,10 +63,11 @@ class Bug2Controller(Node):
         self.create_subscription( Odometry, '/odom', self.odom_callback, 1)
         self.create_subscription( PoseStamped, '/goal', self.goal_callback, 1)
         self.create_subscription( LaserScan, '/filtered_scan', self.scan_callback, 1)
+        self.create_subscription( Bool, '/bug2_run', self.run, 1)
 
-        self.start_time = self.get_clock().now()
-        time_period = 0.1
-        self.timer = self.create_timer(time_period, self.run)
+        # self.start_time = self.get_clock().now()
+        # time_period = 0.1
+        # self.timer = self.create_timer(time_period, self.run)
         # Set up shutdown behavior
 
 
@@ -164,7 +166,7 @@ class Bug2Controller(Node):
         cmd_vel.angular.z = 0.0
         self.cmd_vel_pub.publish(cmd_vel)
 
-    def run(self):
+    def run(self, msg):
         # Main loop to control the robot      
         if self.current_state is StateMachine.LOOK_TOGOAL:
             self.look_to_goal()

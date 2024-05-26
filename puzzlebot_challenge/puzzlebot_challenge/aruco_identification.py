@@ -1,8 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Point
 from sensor_msgs.msg import Image, CameraInfo
-from std_msgs.msg import Int32,Float32
 from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
 from cv_bridge import CvBridge
 import cv2
@@ -10,7 +8,7 @@ import numpy as np
 
 class QRCodeTracker(Node):
     def __init__(self):
-        super().__init__('aruco_tracker')
+        super().__init__('aruco_identification')
         self.y = 0
         self.x = 0
         self.height = 0
@@ -44,10 +42,10 @@ class QRCodeTracker(Node):
             return
         cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self.width = cv_image.shape[1]
-        # arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        # arucoParams = cv2.aruco.DetectorParameters()
-        arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-        arucoParams = cv2.aruco.DetectorParameters_create()
+        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        arucoParams = cv2.aruco.DetectorParameters()
+        # arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+        # arucoParams = cv2.aruco.DetectorParameters_create()
         (corners, ids, rejected) = cv2.aruco.detectMarkers(cv_image, arucoDict, parameters=arucoParams)
         
 
@@ -90,20 +88,18 @@ class QRCodeTracker(Node):
                 aruco_info = Arucoinfo()
                 aruco_info.tag = str(i)
                 aruco_info.id = str(ids[i])
-                point = Point()
-                point.x = x_3d
-                point.y = y_3d
-                point.z = z_3d
-                aruco_info.point = point
+                aruco_info.point.header.frame_id = 'puzzlebot'
+                aruco_info.point.point.x = x_3d
+                aruco_info.point.point.y = y_3d
+                aruco_info.point.point.z = z_3d
                 aruco_info.offset = offset
                 aruco_info.height = float(h)
                 aruco_info.width = float(w)
-
                 aruco_array.aruco_array.append(aruco_info)
                 
             self.qr_pub.publish(aruco_array)
 
-        cv2.imshow("QR Code Tracking", cv_image)
+        cv2.imshow("Aruco Tracking", cv_image)
         cv2.waitKey(1)
 
 def main(args=None):
