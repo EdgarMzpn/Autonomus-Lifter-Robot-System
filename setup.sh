@@ -58,6 +58,7 @@ echo "Installation complete"
 
 # Installing ROS2 Lidar package
 echo "Installing the ROS2 Lidar package"
+sudo apt install -y ros-humble-laser-filters
 cd ~/ros2_ws/src
 git clone https://github.com/Slamtec/sllidar_ros2.git
 cd ~/ros2_ws
