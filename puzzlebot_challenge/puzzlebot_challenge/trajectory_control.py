@@ -6,7 +6,7 @@ from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
-from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
+from puzzlebot_msgs.msg import Arucoinfo, ArucoArray, LandmarkList, Landmark
 from tf_transformations import euler_from_quaternion, quaternion_from_euler
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point
@@ -23,11 +23,14 @@ class StateMachine(enum.Enum):
 class TrajectoryControl(Node):
     def __init__(self):
         super().__init__('Trajectory_Control')
+
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(LaserScan, '/filtered_scan', self.lidar_callback, 10)
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
+
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         self.goal_pub = self.create_publisher( PoseStamped, '/goal', 1)
+        self.landmarks_pub = self.create_publisher( LandmarkList, '/landmarks', 1 )
         self.bug_pub = self.create_publisher( Bool, '/bug2_run', 1)
         
         self.current_pose = PoseStamped()
@@ -41,7 +44,7 @@ class TrajectoryControl(Node):
         self.current_angle = 0.0
 
 
-        self.current_state = StateMachine.WANDER
+        self.current_state = StateMachine.GO_TO_TARGET
         
         self.discharge_area = PoseStamped()
         self.discharge_area.header.frame_id = "world"
@@ -54,7 +57,9 @@ class TrajectoryControl(Node):
         self.goal.pose.position.y = 2.0
 
         self.cmd_vel = None
-        self.landmarks = None
+        self.landmarks_ids = {'5': False, '6': False, '7': False, '8': False}
+        self.landmarks = LandmarkList()
+        self.cube_id = '2'
 
 
         self.aruco_info = ArucoArray()
@@ -83,6 +88,20 @@ class TrajectoryControl(Node):
 
     def aruco_callback(self, msg):
         self.aruco_info = msg
+        self.landmarks.landmarks = []
+        for aruco in self.aruco_info.aruco_array:
+            if aruco.id in self.landmarks_ids.keys():
+                print(f'aruco id: {aruco.id}, Dictionary keys: {self.landmarks_ids.keys()}')
+                if self.landmarks_ids[aruco.id] == False:
+                    landmark = Landmark()
+                    landmark.id = aruco.id
+                    landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
+                    self.landmarks.landmarks.append(landmark)
+                    self.landmarks_ids[aruco.id] = True
+        self.landmarks_ids = {key: False for key in self.landmarks_ids}
+        
+        self.landmarks_pub.publish(self.landmarks)
+        
 
     
     def lidar_callback(self, msg):
@@ -117,9 +136,10 @@ class TrajectoryControl(Node):
 
         elif self.current_state is StateMachine.WANDER:
             if self.aruco_info.length > 0:
-                self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
-                self.goal_pub.publish(self.goal)
-                self.current_state = StateMachine.GO_TO_TARGET
+                if self.aruco_info.aruco_array[0].id == self.cube_id:
+                    self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
+                    self.goal_pub.publish(self.goal)
+                    self.current_state = StateMachine.GO_TO_TARGET
             else:
                 print("Wandering, TODO node")
 

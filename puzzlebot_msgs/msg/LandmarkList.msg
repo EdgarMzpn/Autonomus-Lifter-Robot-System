@@ -1,1 +1,1 @@
-puzzlebot_msgs/Landmark[] landmarks
+Landmark[] landmarks

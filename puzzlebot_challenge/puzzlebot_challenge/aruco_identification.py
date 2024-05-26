@@ -42,10 +42,10 @@ class QRCodeTracker(Node):
             return
         cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self.width = cv_image.shape[1]
-        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        arucoParams = cv2.aruco.DetectorParameters()
-        # arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-        # arucoParams = cv2.aruco.DetectorParameters_create()
+        # arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        # arucoParams = cv2.aruco.DetectorParameters()
+        arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+        arucoParams = cv2.aruco.DetectorParameters_create()
         (corners, ids, rejected) = cv2.aruco.detectMarkers(cv_image, arucoDict, parameters=arucoParams)
         
 
@@ -84,10 +84,10 @@ class QRCodeTracker(Node):
                 offset = int(self.width/2 - (x+w/2))
                 cv2.aruco.drawDetectedMarkers(cv_image, corners)
                 coords = str(np.round(x_3d, 2)) + ", " + str(np.round(y_3d, 2)) + ", " + str(np.round(z_3d, 2))
-                cv2.putText(cv_image, coords, (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(cv_image, str(i), (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 aruco_info = Arucoinfo()
                 aruco_info.tag = str(i)
-                aruco_info.id = str(ids[i])
+                aruco_info.id = str(ids[i][0])
                 aruco_info.point.header.frame_id = 'puzzlebot'
                 aruco_info.point.point.x = x_3d
                 aruco_info.point.point.y = y_3d
