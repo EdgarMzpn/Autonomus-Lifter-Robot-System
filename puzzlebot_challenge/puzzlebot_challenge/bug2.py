@@ -89,7 +89,7 @@ class Bug2Controller(Node):
 
         # Rotate the robot towards the goal if the angle error is significant
         if np.fabs(angle_error) > np.pi/90:
-            self.cmd_vel.angular.z = 0.3 if angle_error > 0 else -0.3
+            self.cmd_vel.angular.z = 0.2 if angle_error > 0 else -0.2
         else:
             self.cmd_vel.angular.z = 0.0
             self.current_state = StateMachine.FOLLOW_LINE  # Switch to FOLLOW_LINE state
@@ -104,7 +104,7 @@ class Bug2Controller(Node):
             self.hitpoint = self.current_pose.pose.position  # Record the hitpoint
             self.current_state = StateMachine.WALL_FOLLOW  # Switch to WALL_FOLLOW state
         else:
-            self.cmd_vel.linear.x = 0.1
+            self.cmd_vel.linear.x = 0.05
             self.cmd_vel.angular.z = 0.0
 
         self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
@@ -128,10 +128,10 @@ class Bug2Controller(Node):
                 return
         elif np.any((self.front_distance < 0.3)):
             self.cmd_vel.linear.x = 0.0
-            self.cmd_vel.angular.z = -0.5
+            self.cmd_vel.angular.z = -0.3
         elif np.any((self.frontL_distance >= 0.2)):
             self.cmd_vel.linear.x = 0.05
-            self.cmd_vel.angular.z = 0.5
+            self.cmd_vel.angular.z = 0.3
         else:
             self.cmd_vel.linear.x = 0.05
             self.cmd_vel.angular.z = 0.0

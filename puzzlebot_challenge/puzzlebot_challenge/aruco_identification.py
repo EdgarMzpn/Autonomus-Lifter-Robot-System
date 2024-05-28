@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from puzzlebot_msgs.msg import Arucoinfo, ArucoArray
+from geometry_msgs.msg import Point
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
@@ -95,6 +96,11 @@ class QRCodeTracker(Node):
                 aruco_info.offset = offset
                 aruco_info.height = float(h)
                 aruco_info.width = float(w)
+                aruco_info.corners = []
+                aruco_info.corners.append(Point(x=float(sorted_corners[0][0]), y = float(sorted_corners[0][1])))
+                aruco_info.corners.append(Point(x=float(sorted_corners[1][0]), y = float(sorted_corners[1][1])))
+                aruco_info.corners.append(Point(x=float(sorted_corners[2][0]), y = float(sorted_corners[2][1])))
+                aruco_info.corners.append(Point(x=float(sorted_corners[3][0]), y = float(sorted_corners[3][1])))
                 aruco_array.aruco_array.append(aruco_info)
                 
             self.qr_pub.publish(aruco_array)

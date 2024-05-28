@@ -9,6 +9,7 @@ from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
+from puzzlebot_msgs import LandmarkList
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.qos import qos_profile_sensor_data
@@ -33,11 +34,12 @@ class Localisation(Node):
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
-        self.landmarks = [[2.5, 0.5]] 
+        self.landmark = None
 
         # Subscribers
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl, qos_profile_sensor_data)
         self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr, qos_profile_sensor_data)
+        self.sub_landmarks = self.create_subscription(LandmarkList, '/landmarks', self.landmark_callback, 1)
 
         # Publishers 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
@@ -67,8 +69,8 @@ class Localisation(Node):
         self.linear_speed = self.r * (self.wr + self.wl) / 2.
         self.angular_speed = self.r * (self.wr - self.wl) / self.l
 
-    def map_callback(self, msg):
-        placeholder = msg  # Setup callback for landmarks
+    def landmark_callback(self, msg):
+        self.landmark = msg[0]  # Setup callback for landmarks
 
     def kalman_filter(self, previous_pose):
 
@@ -101,8 +103,8 @@ class Localisation(Node):
 
         # Extend 3x3 matrix to 6x6 for ROS compatibility
 
-        x_diff = self.landmarks[0][0] - self.positionx
-        y_diff = self.landmarks[0][1] - self.positiony
+        x_diff = self.landmark[0][0] - self.positionx
+        y_diff = self.landmark[0][1] - self.positiony
 
         z_estimation = np.array([[np.sqrt(x_diff**2 + y_diff**2)],
                                  [np.arctan2(y_diff, x_diff)-self.angle]])
