@@ -117,7 +117,7 @@ class Bug2Controller(Node):
         self.distance_moved = math.sqrt((self.current_pose.pose.position.x - self.hitpoint.x)**2 + (self.current_pose.pose.position.y - self.hitpoint.y)**2)
         distance_to_line = math.sqrt((closestGoalLine_x - self.current_pose.pose.position.x)**2 + (closestGoalLine_y - self.current_pose.pose.position.y)**2)
 
-        if distance_to_line < 0.1 and self.distance_moved > 0.3:
+        if distance_to_line < 0.15 and self.distance_moved > 0.3:
             distance_to_goal = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
             hitpoint_distance_to_goal = math.sqrt((self.goal.pose.position.x - self.hitpoint.x)**2 + (self.goal.pose.position.y - self.hitpoint.y)**2)
 
@@ -132,6 +132,9 @@ class Bug2Controller(Node):
         elif np.any((self.frontL_distance >= 0.25)):
             self.cmd_vel.linear.x = 0.2
             self.cmd_vel.angular.z = 0.1
+        elif np.any((self.frontL_distance < 0.10)):
+            self.cmd_vel.linear.x = 0.2
+            self.cmd_vel.angular.z = -0.05
         else:
             self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = 0.0
