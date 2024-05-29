@@ -44,7 +44,7 @@ class TrajectoryControl(Node):
         self.current_angle = 0.0
 
 
-        self.current_state = StateMachine.GO_TO_TARGET
+        self.current_state = StateMachine.WANDER
         
         self.discharge_area = PoseStamped()
         self.discharge_area.header.frame_id = "world"
@@ -107,6 +107,7 @@ class TrajectoryControl(Node):
     def lidar_callback(self, msg):
         # Update the distances to obstacles based on laser scan data
         self.distances = np.array(msg.ranges)
+    
 
     def transform_cube_position(self, aruco_point):
 
@@ -128,7 +129,7 @@ class TrajectoryControl(Node):
 
     def run(self):
         
-        # self.get_logger().info(f'Current State: {self.current_state}')
+        self.get_logger().info(f'Current State: {self.current_state}')
         
         if self.current_state is StateMachine.FIND_LANDMARK:
             if self.landmarks: 

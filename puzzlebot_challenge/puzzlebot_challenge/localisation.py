@@ -9,7 +9,7 @@ from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
-from puzzlebot_msgs import LandmarkList
+from puzzlebot_msgs.msg import LandmarkList
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.qos import qos_profile_sensor_data
@@ -101,8 +101,6 @@ class Localisation(Node):
         # self.get_logger().info(f"Covariance Matrix:\n{self.sigma_estimation}")
         # self.get_logger().info("Matrix Q_k: {}".format(Q_k))
 
-        # Extend 3x3 matrix to 6x6 for ROS compatibility
-
         x_diff = self.landmark[0][0] - self.positionx
         y_diff = self.landmark[0][1] - self.positiony
 
@@ -124,13 +122,14 @@ class Localisation(Node):
         self.sigma = (np.diag([1,1,1])-K_k.dot(G_k)).dot(self.sigma_estimation)
         
 
+        # Extend 3x3 matrix to 6x6 for ROS compatibility
         sigma_full = np.zeros((6, 6))
         sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
         sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
         sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
         sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
 
-        print(sigma_full)
+        # print(sigma_full)
 
         return sigma_full, u_true
 

@@ -43,10 +43,10 @@ class QRCodeTracker(Node):
             return
         cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
         self.width = cv_image.shape[1]
-        # arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        # arucoParams = cv2.aruco.DetectorParameters()
-        arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-        arucoParams = cv2.aruco.DetectorParameters_create()
+        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        arucoParams = cv2.aruco.DetectorParameters()
+        # arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+        # arucoParams = cv2.aruco.DetectorParameters_create()
         (corners, ids, rejected) = cv2.aruco.detectMarkers(cv_image, arucoDict, parameters=arucoParams)
         
 
@@ -105,8 +105,8 @@ class QRCodeTracker(Node):
                 
             self.qr_pub.publish(aruco_array)
 
-        cv2.imshow("Aruco Tracking", cv_image)
-        cv2.waitKey(1)
+        # cv2.imshow("Aruco Tracking", cv_image)
+        # cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)

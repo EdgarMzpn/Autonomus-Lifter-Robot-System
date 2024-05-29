@@ -80,16 +80,16 @@ def generate_launch_description():
 
 
     return LaunchDescription([
-        robot_state_publisher_node,
-        rviz_node,
-        tf2_ros,
-        pose_sim, 
+        # robot_state_publisher_node,
+        # rviz_node,
+        # tf2_ros,
+        # pose_sim, 
         localisation,
-        joint_state, 
+        # joint_state, 
         # controller
         trayectory,
-        aruco,
         bug2,
+        # aruco,
         #simlulation
     ])
 

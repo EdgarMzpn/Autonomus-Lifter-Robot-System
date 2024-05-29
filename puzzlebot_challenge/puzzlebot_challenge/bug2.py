@@ -39,7 +39,7 @@ class Bug2Controller(Node):
         # Set the goal position for the robot
         self.goal = PoseStamped()
         self.goal.header.frame_id = "world"
-        self.goal.pose.position.x = 0.0
+        self.goal.pose.position.x = 0.3
         self.goal.pose.position.y = 0.0
 
         self.cmd_vel = Twist()  # Velocity command
@@ -52,9 +52,9 @@ class Bug2Controller(Node):
         self.left_distance = 0.0
 
         # Calculate line parameters (slope and y-intercept) from start to goal
-        # self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
-        #         self.goal.pose.position.x - self.start_pose.pose.position.x)
-        # self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
+        self.line_slope_m = (self.goal.pose.position.y - self.start_pose.pose.position.y) / (
+                self.goal.pose.position.x - self.start_pose.pose.position.x)
+        self.line_slope_b = self.start_pose.pose.position.y - (self.line_slope_m * self.start_pose.pose.position.x)
 
         # Initialize ROS publisher for velocity commands
         self.cmd_vel_pub = self.create_publisher( Twist, '/cmd_vel', 1)
@@ -89,7 +89,7 @@ class Bug2Controller(Node):
 
         # Rotate the robot towards the goal if the angle error is significant
         if np.fabs(angle_error) > np.pi/90:
-            self.cmd_vel.angular.z = 0.2 if angle_error > 0 else -0.2
+            self.cmd_vel.angular.z = 0.3 if angle_error > 0 else -0.3
         else:
             self.cmd_vel.angular.z = 0.0
             self.current_state = StateMachine.FOLLOW_LINE  # Switch to FOLLOW_LINE state
@@ -104,7 +104,7 @@ class Bug2Controller(Node):
             self.hitpoint = self.current_pose.pose.position  # Record the hitpoint
             self.current_state = StateMachine.WALL_FOLLOW  # Switch to WALL_FOLLOW state
         else:
-            self.cmd_vel.linear.x = 0.05
+            self.cmd_vel.linear.x = 0.2
             self.cmd_vel.angular.z = 0.0
 
         self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
@@ -117,7 +117,7 @@ class Bug2Controller(Node):
         self.distance_moved = math.sqrt((self.current_pose.pose.position.x - self.hitpoint.x)**2 + (self.current_pose.pose.position.y - self.hitpoint.y)**2)
         distance_to_line = math.sqrt((closestGoalLine_x - self.current_pose.pose.position.x)**2 + (closestGoalLine_y - self.current_pose.pose.position.y)**2)
 
-        if distance_to_line < 0.1 and self.distance_moved > 0.5:
+        if distance_to_line < 0.1 and self.distance_moved > 0.3:
             distance_to_goal = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
             hitpoint_distance_to_goal = math.sqrt((self.goal.pose.position.x - self.hitpoint.x)**2 + (self.goal.pose.position.y - self.hitpoint.y)**2)
 
@@ -128,12 +128,12 @@ class Bug2Controller(Node):
                 return
         elif np.any((self.front_distance < 0.3)):
             self.cmd_vel.linear.x = 0.0
-            self.cmd_vel.angular.z = -0.3
-        elif np.any((self.frontL_distance >= 0.2)):
-            self.cmd_vel.linear.x = 0.05
-            self.cmd_vel.angular.z = 0.3
+            self.cmd_vel.angular.z = -0.1
+        elif np.any((self.frontL_distance >= 0.25)):
+            self.cmd_vel.linear.x = 0.2
+            self.cmd_vel.angular.z = 0.1
         else:
-            self.cmd_vel.linear.x = 0.05
+            self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = 0.0
 
         self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
@@ -155,8 +155,10 @@ class Bug2Controller(Node):
     def scan_callback(self, msg):
         # Update the distances to obstacles based on laser scan data
         data = np.array(msg.ranges)
-        self.front_distance = np.min(data[141:220])
-        self.frontL_distance = np.min(data[221:310])
+        self.front_distance = np.min(np.concatenate((data[0:40], data[680:720])))
+        self.frontL_distance = np.min(data[41:130])
+        # self.front_distance = np.min(data[141:220])
+        # self.frontL_distance = np.min(data[221:310])
         print("all good")
 
     def stop(self):
