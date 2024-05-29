@@ -9,7 +9,7 @@ from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
-from puzzlebot_msgs.msg import LandmarkList
+from puzzlebot_msgs.msg import LandmarkList, Landmark
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.qos import qos_profile_sensor_data
@@ -27,14 +27,16 @@ class Localisation(Node):
         self.r = 0.05               # Radius of the Wheel
         
         # Constants for error model
-        self.kr = 0.00001  #TODO Error coefficient for the right wheel
-        self.kl = 0.00001  #TODO Error coefficient for the left wheel
+        self.kr = 0.0001  #TODO Error coefficient for the right wheel
+        self.kl = 0.0001  #TODO Error coefficient for the left wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
-        self.landmark = None
+        self.landmark_true = {"2":[1.0,0.0]}
+        self.landmark = LandmarkList()
+        self.landmark.landmarks = [Landmark(x=1.0, y = 0.0, id='2')]
 
         # Subscribers
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl, qos_profile_sensor_data)
@@ -57,20 +59,8 @@ class Localisation(Node):
     def cbWl(self, msg):
         self.wl = msg.data
 
-    def odom_reading(self):
-
-        #Get time difference 
-        self.current_time = self.start_time.to_msg()
-        self.duration = self.get_clock().now() - self.start_time
-
-        # Convert the duration to a float value (in seconds)
-        self.dt = self.duration.nanoseconds * 1e-9
-        
-        self.linear_speed = self.r * (self.wr + self.wl) / 2.
-        self.angular_speed = self.r * (self.wr - self.wl) / self.l
-
     def landmark_callback(self, msg):
-        self.landmark = msg[0]  # Setup callback for landmarks
+        self.landmark = msg  # Setup callback for landmarks
 
     def kalman_filter(self, previous_pose):
 
@@ -83,14 +73,22 @@ class Localisation(Node):
             [0, 0, 1]
         ])
 
-        # Define the error matrix Q_k
-        Q_k = np.diag([self.kr * abs(self.wr) * self.dt, 
-                       self.kl * abs(self.wl) * self.dt, 
-                       (self.kr * abs(self.wr) + self.kl * abs(self.wl)) * self.dt])
+        Gaussian = np.array([[self.kr * abs(self.wr),   0],
+                             [0,                        self.kl * abs(self.wl)]])
 
-        self.angle += self.angular_speed * self.dt #+ Q_k[2][2]
-        self.positionx += self.linear_speed * np.cos(self.angle) * self.dt #+ Q_k[0][0]
-        self.positiony += self.linear_speed * np.sin(self.angle) * self.dt #+ Q_k[1][1]
+        Taylor = np.diag([1/2 * self.r * self.dt, 1/2 * self.r * self.dt, 1/2 * self.r * self.dt]).dot(np.array([[np.cos(previous_pose["angle"]), np.cos(previous_pose["angle"])],
+                                                                                                                [np.sin(previous_pose["angle"]), np.sin(previous_pose["angle"])],
+                                                                                                                [2/self.l, -2/self.l]]))
+        
+        Q_k = Taylor.dot(Gaussian).dot(Taylor.T)
+        # Define the error matrix Q_k
+        # Q_k = np.diag([self.kr * abs(self.wr) * self.dt, 
+        #                self.kl * abs(self.wl) * self.dt, 
+        #                (self.kr * abs(self.wr) + self.kl * abs(self.wl)) * self.dt])
+
+        # self.angle += self.angular_speed * self.dt #+ Q_k[2][2]
+        # self.positionx += self.linear_speed * np.cos(self.angle) * self.dt #+ Q_k[0][0]
+        # self.positiony += self.linear_speed * np.sin(self.angle) * self.dt #+ Q_k[1][1]
         # Update covariance matrix using the previous covariance matrix
         if not hasattr(self, 'sigma'):
             self.sigma = np.eye(3)  # Initializes the covariance matrix if it hasn't been defined
@@ -101,23 +99,29 @@ class Localisation(Node):
         # self.get_logger().info(f"Covariance Matrix:\n{self.sigma_estimation}")
         # self.get_logger().info("Matrix Q_k: {}".format(Q_k))
 
-        x_diff = self.landmark[0][0] - self.positionx
-        y_diff = self.landmark[0][1] - self.positiony
+        x_diff = self.landmark_true[self.landmark.landmarks[0].id][0] - self.positionx
+        y_diff = self.landmark_true[self.landmark.landmarks[0].id][1] - self.positiony
 
         z_estimation = np.array([[np.sqrt(x_diff**2 + y_diff**2)],
                                  [np.arctan2(y_diff, x_diff)-self.angle]])
         
-        R_k = np.array([[0.1, 0.0],
-                        [0.0, 0.2]])  # TODO: Change for equations from mapping
+        R_k = np.array([[1.0, 0.0],
+                        [0.0, 1.0]])  # TODO: Change for equations from mapping
 
         G_k = np.array([    [-x_diff/np.sqrt(z_estimation[0][0]),     -y_diff/np.sqrt(z_estimation[0][0]),   0],
                             [y_diff/z_estimation[0][0],                -x_diff/z_estimation[0][0],             0]])
         
-        Z_true = G_k.dot(self.sigma_estimation).dot(G_k.T) + R_k
+        Z_linear = G_k.dot(self.sigma_estimation).dot(G_k.T) + R_k
 
-        K_k = (self.sigma_estimation).dot(G_k.T).dot(inv(Z_true))
+        K_k = (self.sigma_estimation).dot(G_k.T).dot(inv(Z_linear))
 
-        u_true = u_estimation + K_k.dot(Z_true-z_estimation)
+
+        x_diff_real = self.landmark.landmarks[0].x - self.positionx
+        y_diff_real = self.landmark.landmarks[0].y - self.positiony
+        Z_ideal = np.array([[np.sqrt(x_diff_real**2 + y_diff_real**2)],
+                            [np.arctan2(y_diff_real, x_diff_real)-self.angle]])
+
+        u_true = u_estimation + K_k.dot(Z_ideal-z_estimation)
 
         self.sigma = (np.diag([1,1,1])-K_k.dot(G_k)).dot(self.sigma_estimation)
         
@@ -129,7 +133,8 @@ class Localisation(Node):
         sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
         sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
 
-        # print(sigma_full)
+        # self.get_logger().info("Estimation x: {}, y: {}".format(self.positionx, self.positiony))
+        self.get_logger().info("Real x: {}, y: {}".format(u_true[0], u_true[1]))
 
         return sigma_full, u_true
 
@@ -152,6 +157,10 @@ class Localisation(Node):
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
         sigma_full, u_true = self.kalman_filter(previous_pose)
+
+        self.positionx = u_true[0][0]
+        self.positiony = u_true[1][0]
+        self.angle = u_true[2][0]
         
 
         # Publish odometry via odom topic

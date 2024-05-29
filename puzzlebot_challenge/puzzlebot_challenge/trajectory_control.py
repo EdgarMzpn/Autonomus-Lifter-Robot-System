@@ -57,7 +57,7 @@ class TrajectoryControl(Node):
         self.goal.pose.position.y = 2.0
 
         self.cmd_vel = None
-        self.landmarks_ids = {'5': False, '6': False, '7': False, '8': False}
+        self.landmarks_ids = {'2': False, '6': False, '7': False, '8': False}
         self.landmarks = LandmarkList()
         self.cube_id = '2'
 
@@ -129,7 +129,7 @@ class TrajectoryControl(Node):
 
     def run(self):
         
-        self.get_logger().info(f'Current State: {self.current_state}')
+        # self.get_logger().info(f'Current State: {self.current_state}')
         
         if self.current_state is StateMachine.FIND_LANDMARK:
             if self.landmarks: 

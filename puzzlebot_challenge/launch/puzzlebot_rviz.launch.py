@@ -89,7 +89,7 @@ def generate_launch_description():
         # controller
         trayectory,
         bug2,
-        # aruco,
+        aruco,
         #simlulation
     ])
 

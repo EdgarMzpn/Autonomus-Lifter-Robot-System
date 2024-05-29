@@ -85,7 +85,7 @@ class QRCodeTracker(Node):
                 offset = int(self.width/2 - (x+w/2))
                 cv2.aruco.drawDetectedMarkers(cv_image, corners)
                 coords = str(np.round(x_3d, 2)) + ", " + str(np.round(y_3d, 2)) + ", " + str(np.round(z_3d, 2))
-                cv2.putText(cv_image, str(i), (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(cv_image, coords, (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 aruco_info = Arucoinfo()
                 aruco_info.tag = str(i)
                 aruco_info.id = str(ids[i][0])
