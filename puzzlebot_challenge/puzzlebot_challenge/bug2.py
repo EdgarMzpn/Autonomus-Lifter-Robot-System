@@ -39,7 +39,7 @@ class Bug2Controller(Node):
         # Set the goal position for the robot
         self.goal = PoseStamped()
         self.goal.header.frame_id = "world"
-        self.goal.pose.position.x = 0.3
+        self.goal.pose.position.x = 3.0
         self.goal.pose.position.y = 0.0
 
         self.cmd_vel = Twist()  # Velocity command
