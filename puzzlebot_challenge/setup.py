@@ -41,6 +41,7 @@ setup(
             'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
             'bug2 = puzzlebot_challenge.bug2:main',
             'map_corners = puzzlebot_challenge.mapping_corners:main',
+            'handle_object = puzzlebot_challenge.handle_object:main',
         ],
     },
 )
