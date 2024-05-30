@@ -75,7 +75,6 @@ class TrajectoryControl(Node):
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
 
-
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
         orientation_euler = euler_from_quaternion([
@@ -99,7 +98,6 @@ class TrajectoryControl(Node):
                     self.landmarks.landmarks.append(landmark)
                     self.landmarks_ids[aruco.id] = True
         self.landmarks_ids = {key: False for key in self.landmarks_ids}
-        
         self.landmarks_pub.publish(self.landmarks)
         
 
@@ -142,15 +140,44 @@ class TrajectoryControl(Node):
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
             else:
-                print("Wandering, TODO node")
+                if self.distances:
+                    # Asumiendo que los ángulos están definidos similarmente en ScanFilter
+                    angles = np.linspace(-np.pi/2, np.pi/2, len(self.distances))  # Ajusta según tu configuración real del LiDAR
 
+                    # Calcula el punto más lejano basado en la distancia
+                    max_distance = max(self.distances)
+                    max_index = np.argmax(self.distances)
+                    max_angle = angles[max_index]
+
+                    self.get_logger().info(f"Wandering: Max distance = {max_distance:.2f} meters at angle = {np.degrees(max_angle):.2f} degrees")
+
+                    # Calcular las coordenadas en el marco global usando la odometría actual
+                    robot_x = self.current_pose.pose.position.x
+                    robot_y = self.current_pose.pose.position.y
+                    robot_theta = self.current_angle
+
+                    goal_x = robot_x + max_distance * np.cos(robot_theta + max_angle)
+                    goal_y = robot_y + max_distance * np.sin(robot_theta + max_angle)
+
+                    # Publicar las coordenadas calculadas en /goal
+                    self.goal.pose.position.x = goal_x
+                    self.goal.pose.position.y = goal_y
+                    self.goal_pub.publish(self.goal)
+                    self.current_state = StateMachine.GO_TO_TARGET
+                    # Registrar la información del objetivo publicado
+                    self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
+                else:
+                    self.get_logger().info("Wandering: No LiDAR data available")
 
         elif self.current_state is StateMachine.GO_TO_TARGET:
-            if self.aruco_info.aruco_array[0].point.point.z < 0.35:
+            if self.aruco_info.length == 0:
+                self.current_state = StateMachine.FIND_LANDMARK
+            elif self.aruco_info.aruco_array[0].point.point.z < 0.35:
                 self.current_state = StateMachine.HANDLE_OBJECT
+
             else:
                 self.bug_pub.publish(Bool(data=True))
-                # self.get_logger().info(f'VELOCITY: x={self.velocity_msg.linear}')
+                #self.get_logger().info(f'VELOCITY: x={self.velocity_msg.linear}')
   
 
         # elif self.current_state is StateMachine.HANDLE_OBJECT:
