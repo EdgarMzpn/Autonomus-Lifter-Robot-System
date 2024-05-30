@@ -34,7 +34,8 @@ class Localisation(Node):
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
-        self.landmark_true = {"2":[1.0,0.0]}
+        self.landmark_true = {"9":[-0.309,0.0], "10": [-0.322, 1.57], "11": [-0.282, 3.0215], "12":[0, 3.3225],
+                              "4":[3.14, 0], "5":[3 , -0.364], "7":[1.506, -0.359], "8":[0, -0.385], "1":[1.0, 0.0]}
         self.landmark = LandmarkList()
         self.landmark.landmarks = [Landmark(x=1.0, y = 0.0, id='2')]
 
