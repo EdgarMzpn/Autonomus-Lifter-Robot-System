@@ -146,7 +146,7 @@ class TrajectoryControl(Node):
 
 
         elif self.current_state is StateMachine.GO_TO_TARGET:
-            if self.aruco_info.aruco_array[0].point.point.z < 0.15:
+            if self.aruco_info.aruco_array[0].point.point.z < 0.35:
                 self.current_state = StateMachine.HANDLE_OBJECT
             else:
                 self.bug_pub.publish(Bool(data=True))

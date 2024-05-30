@@ -27,8 +27,8 @@ class Localisation(Node):
         self.r = 0.05               # Radius of the Wheel
         
         # Constants for error model
-        self.kr = 0.0001  #TODO Error coefficient for the right wheel
-        self.kl = 0.0001  #TODO Error coefficient for the left wheel
+        self.kr = 0.5  #TODO Error coefficient for the right wheel
+        self.kl = 0.5  #TODO Error coefficient for the left wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
@@ -105,8 +105,8 @@ class Localisation(Node):
         z_estimation = np.array([[np.sqrt(x_diff**2 + y_diff**2)],
                                  [np.arctan2(y_diff, x_diff)-self.angle]])
         
-        R_k = np.array([[1.0, 0.0],
-                        [0.0, 1.0]])  # TODO: Change for equations from mapping
+        R_k = np.array([[0.01, 0.0],
+                        [0.0, 0.01]])  # TODO: Change for equations from mapping
 
         G_k = np.array([    [-x_diff/np.sqrt(z_estimation[0][0]),     -y_diff/np.sqrt(z_estimation[0][0]),   0],
                             [y_diff/z_estimation[0][0],                -x_diff/z_estimation[0][0],             0]])

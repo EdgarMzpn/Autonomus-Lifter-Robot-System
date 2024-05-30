@@ -18,7 +18,7 @@ class QRCodeTracker(Node):
         self.sensor_width_mm = 3.674  # Sensor width in mm
         self.image_width_pixels = 3280  # Image width in pixels
         self.focal_length_mm = 3.04  # Lens focal length in mm
-        self.object_width_real = 0.05
+        self.object_width_real = 0.04
         self.intrinsics = None
         self.subscription = self.create_subscription(Image, '/video_source/raw', self.image_callback, 10)
         self.subscription_info = self.create_subscription(CameraInfo, '/camera_info', self.camera_info_callback, 10)
@@ -36,6 +36,12 @@ class QRCodeTracker(Node):
             'fy': 1290.880880,
             'cx': 598.847438,
             'cy': 351.188314
+        } 
+        self.intrinsics = {
+            'fx': 1294.852001,
+            'fy': 1299.050763,
+            'cx': 627.413749,
+            'cy': 373.197113
         } 
 
     def image_callback(self, msg):
