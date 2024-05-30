@@ -40,8 +40,8 @@ setup(
             'oval_pose = puzzlebot_challenge.oval_pose_publisher:main',
             'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
             'bug2 = puzzlebot_challenge.bug2:main',
-            'map_corners = puzzlebot_challenge.mapping_corners:main',
             'handle_object = puzzlebot_challenge.handle_object:main',
+            'landmark = puzzlebot_challenge.landmark_detection:main',
         ],
     },
 )
