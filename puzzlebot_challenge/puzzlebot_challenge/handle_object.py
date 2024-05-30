@@ -78,6 +78,8 @@ class ObjectHandler(Node):
             self.aligned = self.velocity_control(self.target_x, self.target_y, self.target_angle)
         elif self.aligned:
             aruco_handled = self.handle_aruco()
+
+        self.get_logger().info(f'Target: x={self.target_x} y={self.target_y}')
         
         self.handled_pub.publish(aruco_handled)
 
