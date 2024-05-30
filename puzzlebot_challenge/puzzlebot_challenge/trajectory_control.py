@@ -33,7 +33,6 @@ class TrajectoryControl(Node):
         # Publicadores
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal', 1)
-        self.landmarks_pub = self.create_publisher(LandmarkList, '/landmarks', 1)
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
         
         # Inicialización de la pose y ángulo actual
@@ -63,8 +62,8 @@ class TrajectoryControl(Node):
 
         # Otras variables
         self.cmd_vel = None
-        self.landmarks_ids = {'1': False, '6': False, '7': False, '8': False}
-        self.landmarks = LandmarkList()
+        
+        
         self.cube_id = '2'
 
         self.aruco_info = ArucoArray()
@@ -93,18 +92,7 @@ class TrajectoryControl(Node):
 
     def aruco_callback(self, msg):
         self.aruco_info = msg
-        self.landmarks.landmarks = []
-        for aruco in self.aruco_info.aruco_array:
-            if aruco.id in self.landmarks_ids.keys():
-                self.get_logger().info(f'aruco id: {aruco.id}, Dictionary keys: {self.landmarks_ids.keys()}')
-                if not self.landmarks_ids[aruco.id]:
-                    landmark = Landmark()
-                    landmark.id = aruco.id
-                    landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
-                    self.landmarks.landmarks.append(landmark)
-                    self.landmarks_ids[aruco.id] = True
-        self.landmarks_ids = {key: False for key in self.landmarks_ids}
-        self.landmarks_pub.publish(self.landmarks)
+        
 
     def lidar_callback(self, msg):
         self.distances = np.array(msg.ranges)

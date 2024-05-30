@@ -2,6 +2,7 @@
 import rclpy
 import math
 import numpy as np
+from math import sin, cos, inf, pi
 from numpy.linalg import inv
 from rclpy.node import Node
 from std_msgs.msg import Float32
@@ -9,7 +10,7 @@ from geometry_msgs.msg import Quaternion, Pose
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from tf_transformations import quaternion_from_euler
-from puzzlebot_msgs.msg import LandmarkList, Landmark
+from puzzlebot_msgs.msg import LandmarkList, Landmark, ArucoArray
 from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from rclpy.qos import qos_profile_sensor_data
@@ -37,12 +38,13 @@ class Localisation(Node):
         self.landmark_true = {"9":[-0.309,0.0], "10": [-0.322, 1.57], "11": [-0.282, 3.0215], "12":[0, 3.3225],
                               "4":[3.14, 0], "5":[3 , -0.364], "7":[1.506, -0.359], "8":[0, -0.385], "1":[1.0, 0.0]}
         self.landmark = LandmarkList()
-        self.landmark.landmarks = [Landmark(x=1.0, y = 0.0, id='2')]
+        self.landmark.landmarks = []
+        self.cube_id = '2'
 
         # Subscribers
         self.sub_wl = self.create_subscription(Float32, '/VelocityEncL', self.cbWl, qos_profile_sensor_data)
         self.sub_wr = self.create_subscription(Float32, '/VelocityEncR', self.cbWr, qos_profile_sensor_data)
-        self.sub_landmarks = self.create_subscription(LandmarkList, '/landmarks', self.landmark_callback, 1)
+        self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
 
         # Publishers 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 1)
@@ -60,8 +62,29 @@ class Localisation(Node):
     def cbWl(self, msg):
         self.wl = msg.data
 
-    def landmark_callback(self, msg):
-        self.landmark = msg  # Setup callback for landmarks
+    def aruco_callback(self, msg):
+        self.aruco_info = msg
+        self.landmarks.landmarks = []
+        for aruco in self.aruco_info.aruco_array:
+            if aruco.id != self.cube_id:
+                landmark = Landmark()
+                landmark.id = aruco.id
+                landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
+                self.landmarks.landmarks.append(landmark)
+
+    def transform_cube_position(self, aruco_point):
+        rotation_matrix = np.array([
+            [cos(self.angle), -sin(self.angle)],
+            [sin(self.angle), cos(self.angle)]
+        ])
+
+        puzzlebot_coords = np.array([aruco_point.z, aruco_point.x])
+        world_coords = rotation_matrix.dot(puzzlebot_coords)
+
+        aruco_x = self.positionx + world_coords[0]
+        aruco_y = self.positiony + world_coords[1]
+
+        return aruco_x, aruco_y
 
     def kalman_filter(self, previous_pose):
 
@@ -157,11 +180,14 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
-        sigma_full, u_true = self.kalman_filter(previous_pose)
+        if len(self.landmark.landmarks) < 0:
 
-        self.positionx = u_true[0][0]
-        self.positiony = u_true[1][0]
-        self.angle = u_true[2][0]
+            sigma_full, u_true = self.kalman_filter(previous_pose)
+
+            self.positionx = u_true[0][0]
+            self.positiony = u_true[1][0]
+            self.angle = u_true[2][0]
+            odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
         
 
         # Publish odometry via odom topic
@@ -176,7 +202,6 @@ class Localisation(Node):
         odom.pose.pose.orientation.y = q[1]
         odom.pose.pose.orientation.z = q[2]
         odom.pose.pose.orientation.w = q[3]
-        odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
         self.odom_pub.publish(odom)
