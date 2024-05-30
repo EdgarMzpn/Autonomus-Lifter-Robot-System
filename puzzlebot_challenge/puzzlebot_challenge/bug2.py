@@ -89,7 +89,7 @@ class Bug2Controller(Node):
 
         # Rotate the robot towards the goal if the angle error is significant
         if np.fabs(angle_error) > np.pi/90:
-            self.cmd_vel.angular.z = 0.3 if angle_error > 0 else -0.3
+            self.cmd_vel.angular.z = 0.1 if angle_error > 0 else -0.1
         else:
             self.cmd_vel.angular.z = 0.0
             self.current_state = StateMachine.FOLLOW_LINE  # Switch to FOLLOW_LINE state
