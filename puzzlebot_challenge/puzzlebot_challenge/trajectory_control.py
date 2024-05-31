@@ -81,6 +81,7 @@ class TrajectoryControl(Node):
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
         self.arrived = None
+        self.wandergoal = False
 
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
@@ -116,18 +117,26 @@ class TrajectoryControl(Node):
 
     def run(self):
         if self.current_state is StateMachine.FIND_LANDMARK:
+            self.get_logger().info(f"Entering FIND_LANDMARK")
             if self.landmarks:
+                stop_spin_msg = Twist()
+                self.velocity_pub.publish(stop_spin_msg)
                 self.current_state = StateMachine.WANDER
+            else:
+                spin_msg = Twist()
+                spin_msg.angular.z = 0.5  # Velocidad angular en radianes por segundo
+                self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
+            self.get_logger().info(f"Entering Wander")
             if self.aruco_info.length > 0:
                 if self.aruco_info.aruco_array[0].id == self.cube_id:
                     self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
 
-            elif np.any(self.distances) and self.arrived == False:
-                angles = np.linspace(-1, 1, len(self.distances))
+            elif np.any(self.distances) and self.wandergoal == False:
+                angles = np.linspace(-pi/2, pi/2, len(self.distances))
                 points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
                 new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
                 self.distances = new_ranges
@@ -151,14 +160,17 @@ class TrajectoryControl(Node):
                     self.goal.pose.position.x = goal_x
                     self.goal.pose.position.y = goal_y
                     self.goal_pub.publish(self.goal)
-                    self.current_state = StateMachine.GO_TO_TARGET
-
                     self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
+                    self.wandergoal = True
+                    self.current_state = StateMachine.GO_TO_TARGET
                 else:
                     self.get_logger().info("Wandering: No valid max range found")
 
         elif self.current_state is StateMachine.GO_TO_TARGET:
-            if self.aruco_info.length == 0:
+            if self.aruco_info.length == 0 and self.arrived == True:
+                spin_msg = Twist()
+                spin_msg.angular.z = 0.5  # Velocidad angular en radianes por segundo
+                self.velocity_pub.publish(spin_msg)
                 self.current_state = StateMachine.FIND_LANDMARK
             elif self.aruco_info.aruco_array[0].point.point.z < 0.35:
                 self.current_state = StateMachine.HANDLE_OBJECT
