@@ -81,7 +81,30 @@ class TrajectoryControl(Node):
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
         self.arrived = None
-        self.wandergoal = False
+        self.carga = False
+
+        #Creación del diccionario de arucos
+        self.arucos = {
+            'A': PoseStamped(),
+            'B': PoseStamped(),
+            'C': PoseStamped()
+        }
+
+        # Configurar las coordenadas de cada punto
+        self.arucos['A'].pose.position.x = 1.0
+        self.arucos['A'].pose.position.y = 1.0
+        self.arucos['A'].pose.position.z = 0.0
+        self.arucos['A'].pose.header.frame_id = 'world'
+
+        self.arucos['B'].pose.position.x = 3.0
+        self.arucos['B'].pose.position.y = 5.0
+        self.arucos['B'].pose.position.z = 0.0
+        self.arucos['B'].pose.header.frame_id = 'world'
+
+        self.arucos['C'].pose.position.x = -1.0
+        self.arucos['C'].pose.position.y = 0.0
+        self.arucos['C'].pose.position.z = 0.0
+        self.arucos['C'].pose.header.frame_id = 'world'
 
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
@@ -174,7 +197,7 @@ class TrajectoryControl(Node):
             #     spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
             #     self.velocity_pub.publish(spin_msg)
             #     self.current_state = StateMachine.FIND_LANDMARK
-            if self.aruco_info.length > 0:
+            if self.aruco_info.length > 0 and self.carga == False:
                 if self.aruco_info.aruco_array[0].point.point.z < 0.5:
                     stop_spin_msg = Twist()
                     self.velocity_pub(stop_spin_msg)
@@ -188,6 +211,11 @@ class TrajectoryControl(Node):
 
         elif self.current_state is StateMachine.HANDLE_OBJECT:
             self.get_logger().info(f"Entering HANDLE_OBJECT")
+            if self.aruco_info.length == 0:
+                pose = self.arucos['A']
+                self.goal_pub.publish(pose)
+                self.carga = True
+                self.current_state = StateMachine.GO_TO_TARGET
             # Funciones comentadas
             # if self.handle.picked:
             #     self.current_state = StateMachine.GO_TO_TARGET
