@@ -91,8 +91,8 @@ class TrajectoryControl(Node):
         }
 
         # Configurar las coordenadas de cada punto
-        self.arucos['A'].pose.position.x = 1.0
-        self.arucos['A'].pose.position.y = 1.0
+        self.arucos['A'].pose.position.x = 3.1
+        self.arucos['A'].pose.position.y = 2.82
         self.arucos['A'].pose.position.z = 0.0
         self.arucos['A'].pose.header.frame_id = 'world'
 
