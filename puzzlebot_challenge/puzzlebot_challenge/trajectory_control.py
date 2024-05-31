@@ -29,10 +29,12 @@ class TrajectoryControl(Node):
         self.odometry_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
         self.lidar_sub = self.create_subscription(LaserScan, '/filtered_scan', self.lidar_callback, 10)
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
+        self.arrived_sub = self.create_subscription(Bool, '/arrived', self.arrived_callback, 10)
 
         # Publicadores
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal', 1)
+        self.landmarks_pub = self.create_publisher(LandmarkList, '/landmarks', 1)
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
         
         # Inicialización de la pose y ángulo actual
@@ -62,8 +64,7 @@ class TrajectoryControl(Node):
 
         # Otras variables
         self.cmd_vel = None
-        
-        
+    
         self.cube_id = '2'
 
         self.aruco_info = ArucoArray()
@@ -79,6 +80,7 @@ class TrajectoryControl(Node):
         # Timer para actualizar la pose
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
+        self.arrived = None
 
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
@@ -92,8 +94,6 @@ class TrajectoryControl(Node):
 
     def aruco_callback(self, msg):
         self.aruco_info = msg
-        
-
     def lidar_callback(self, msg):
         self.distances = np.array(msg.ranges)
 
@@ -111,6 +111,9 @@ class TrajectoryControl(Node):
 
         return aruco_x, aruco_y
 
+    def arrived_callback(self, msg):
+        self.arrived = msg.data
+
     def run(self):
         if self.current_state is StateMachine.FIND_LANDMARK:
             if self.landmarks:
@@ -122,39 +125,37 @@ class TrajectoryControl(Node):
                     self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
-            else:
-                if np.any(self.distances):
-                    angles = linspace(-pi, pi, len(self.distances))  # Suponiendo un escaneo de 360 grados
-                    points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
-                    new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
-                    self.distances = new_ranges
 
-                    # Filtrar los valores válidos
-                    valid_distances = [r for r in self.distances if not np.isinf(r) and not np.isnan(r)]
+            elif np.any(self.distances) and self.arrived == False:
+                angles = np.linspace(-1, 1, len(self.distances))
+                points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
+                new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
+                self.distances = new_ranges
 
-                    if valid_distances:
-                        max_index = np.argmax(valid_distances)
-                        max_range = valid_distances[max_index]
+                # Filtrar los valores válidos
+                valid_distances = [r for r in self.distances if not np.isinf(r) and not np.isnan(r)]
 
-                        self.get_logger().info(f"Wandering: Max distance = {max_range:.2f} meters at angle = {np.degrees(angles[max_index]):.2f} degrees")
+                if valid_distances:
+                    max_index = np.argmax(valid_distances)
+                    max_range = valid_distances[max_index]
 
-                        robot_x = self.current_pose.pose.position.x
-                        robot_y = self.current_pose.pose.position.y
-                        robot_theta = self.current_angle
+                    self.get_logger().info(f"Wandering: Max distance = {max_range:.2f} meters at angle = {np.degrees(angles[max_index]):.2f} degrees")
 
-                        goal_x = robot_x + max_range * cos(robot_theta + angles[max_index])
-                        goal_y = robot_y + max_range * sin(robot_theta + angles[max_index])
+                    robot_x = self.current_pose.pose.position.x
+                    robot_y = self.current_pose.pose.position.y
+                    robot_theta = self.current_angle
 
-                        self.goal.pose.position.x = goal_x
-                        self.goal.pose.position.y = goal_y
-                        self.goal_pub.publish(self.goal)
-                        self.current_state = StateMachine.GO_TO_TARGET
+                    goal_x = robot_x + max_range * cos(robot_theta + angles[max_index])
+                    goal_y = robot_y + max_range * sin(robot_theta + angles[max_index])
 
-                        self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
-                    else:
-                        self.get_logger().info("Wandering: No valid max range found")
+                    self.goal.pose.position.x = goal_x
+                    self.goal.pose.position.y = goal_y
+                    self.goal_pub.publish(self.goal)
+                    self.current_state = StateMachine.GO_TO_TARGET
+
+                    self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
                 else:
-                    self.get_logger().info("Wandering: No LiDAR data available")
+                    self.get_logger().info("Wandering: No valid max range found")
 
         elif self.current_state is StateMachine.GO_TO_TARGET:
             if self.aruco_info.length == 0:
