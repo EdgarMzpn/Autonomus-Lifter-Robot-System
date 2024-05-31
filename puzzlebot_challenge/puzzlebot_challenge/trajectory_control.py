@@ -49,7 +49,7 @@ class TrajectoryControl(Node):
         self.current_angle = 0.0
 
         # Estado inicial de la máquina de estados
-        self.current_state = StateMachine.WANDER
+        self.current_state = StateMachine.FIND_LANDMARK
         
         # Área de descarga y objetivo
         self.discharge_area = PoseStamped()
@@ -118,7 +118,7 @@ class TrajectoryControl(Node):
     def run(self):
         if self.current_state is StateMachine.FIND_LANDMARK:
             self.get_logger().info(f"Entering FIND_LANDMARK")
-            if self.landmarks:
+            if self.aruco_info:
                 stop_spin_msg = Twist()
                 self.velocity_pub.publish(stop_spin_msg)
                 self.current_state = StateMachine.WANDER
@@ -135,49 +135,52 @@ class TrajectoryControl(Node):
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
 
-            elif np.any(self.distances) and self.wandergoal == False:
-                angles = np.linspace(-pi/2, pi/2, len(self.distances))
-                points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
-                new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
-                self.distances = new_ranges
+            #elif np.any(self.distances) and self.wandergoal == False:
+                #angles = np.linspace(-pi/2, pi/2, len(self.distances))
+                #points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
+                #new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
+                #self.distances = new_ranges
 
                 # Filtrar los valores válidos
-                valid_distances = [r for r in self.distances if not np.isinf(r) and not np.isnan(r)]
+                #valid_distances = [r for r in self.distances if not np.isinf(r) and not np.isnan(r)]
 
-                if valid_distances:
-                    max_index = np.argmax(valid_distances)
-                    max_range = valid_distances[max_index]
+                #if valid_distances:
+                    #max_index = np.argmax(valid_distances)
+                    #max_range = valid_distances[max_index]
 
-                    self.get_logger().info(f"Wandering: Max distance = {max_range:.2f} meters at angle = {np.degrees(angles[max_index]):.2f} degrees")
+                    #self.get_logger().info(f"Wandering: Max distance = {max_range:.2f} meters at angle = {np.degrees(angles[max_index]):.2f} degrees")
 
-                    robot_x = self.current_pose.pose.position.x
-                    robot_y = self.current_pose.pose.position.y
-                    robot_theta = self.current_angle
+                    #robot_x = self.current_pose.pose.position.x
+                    #robot_y = self.current_pose.pose.position.y
+                    #robot_theta = self.current_angle
 
-                    goal_x = robot_x + max_range * cos(robot_theta + angles[max_index])
-                    goal_y = robot_y + max_range * sin(robot_theta + angles[max_index])
+                    #goal_x = robot_x + max_range * cos(robot_theta + angles[max_index])
+                    #goal_y = robot_y + max_range * sin(robot_theta + angles[max_index])
 
-                    self.goal.pose.position.x = goal_x
-                    self.goal.pose.position.y = goal_y
-                    self.goal_pub.publish(self.goal)
-                    self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
-                    self.wandergoal = True
-                    self.current_state = StateMachine.GO_TO_TARGET
-                else:
-                    self.get_logger().info("Wandering: No valid max range found")
+                    #self.goal.pose.position.x = goal_x
+                    #self.goal.pose.position.y = goal_y
+                    #self.goal_pub.publish(self.goal)
+                    #self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
+                    #self.wandergoal = True
+                    #self.current_state = StateMachine.GO_TO_TARGET
+                #else:
+                    #self.get_logger().info("Wandering: No valid max range found")
 
         elif self.current_state is StateMachine.GO_TO_TARGET:
-            if self.aruco_info.length == 0 and self.arrived == True:
-                spin_msg = Twist()
-                spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
-                self.velocity_pub.publish(spin_msg)
-                self.current_state = StateMachine.FIND_LANDMARK
-            elif self.aruco_info.aruco_array[0].point.point.z < 0.35:
-                self.current_state = StateMachine.HANDLE_OBJECT
+            self.get_logger().info(f"Entering GO_TO_TARGET")
+            # if self.aruco_info.length == 0 and self.arrived == True:
+            #     spin_msg = Twist()
+            #     spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
+            #     self.velocity_pub.publish(spin_msg)
+            #     self.current_state = StateMachine.FIND_LANDMARK
+            if self.aruco_info:
+                if self.aruco_info.aruco_array[0].point.point.z < 0.35:
+                    self.current_state = StateMachine.HANDLE_OBJECT
             else:
                 self.bug_pub.publish(Bool(data=True))
 
         elif self.current_state is StateMachine.HANDLE_OBJECT:
+            self.get_logger().info(f"Entering HANDLE_OBJECT")
             # Funciones comentadas
             # if self.handle.picked:
             #     self.current_state = StateMachine.GO_TO_TARGET
