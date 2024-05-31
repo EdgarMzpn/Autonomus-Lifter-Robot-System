@@ -83,7 +83,7 @@ class QRCodeTracker(Node):
 
                 z_3d = (fx * self.object_width_real) / h
 
-                x_3d = (x - cx) * z_3d / fx
+                x_3d = -(x - cx) * z_3d / fx
                 y_3d = (y - cy) * z_3d / fy
 
                 # focal_length_pixels = self.focal_length_mm * (self.image_width_pixels / self.sensor_width_mm)

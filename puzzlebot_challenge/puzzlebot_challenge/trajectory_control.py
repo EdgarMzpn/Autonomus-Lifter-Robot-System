@@ -125,10 +125,11 @@ class TrajectoryControl(Node):
             else:
                 spin_msg = Twist()
                 spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
+                spin_msg.linear = 0
                 self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
-            self.get_logger().info(f"Entering Wander")
+            self.get_logger().info(f"Entering WANDER")
             if self.aruco_info.length > 0:
                 if self.aruco_info.aruco_array[0].id == self.cube_id:
                     self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
@@ -173,10 +174,16 @@ class TrajectoryControl(Node):
             #     spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
             #     self.velocity_pub.publish(spin_msg)
             #     self.current_state = StateMachine.FIND_LANDMARK
-            if self.aruco_info:
-                if self.aruco_info.aruco_array[0].point.point.z < 0.35:
+            if self.aruco_info.length > 0:
+                if self.aruco_info.aruco_array[0].point.point.z < 0.5:
+                    stop_spin_msg = Twist()
+                    self.velocity_pub(stop_spin_msg)
                     self.current_state = StateMachine.HANDLE_OBJECT
+                else:
+                    self.get_logger().info(f"Entrando a bug_pug")
+                    self.bug_pub.publish(Bool(data=True))
             else:
+                self.get_logger().info(f"Entering a bug_pug")
                 self.bug_pub.publish(Bool(data=True))
 
         elif self.current_state is StateMachine.HANDLE_OBJECT:

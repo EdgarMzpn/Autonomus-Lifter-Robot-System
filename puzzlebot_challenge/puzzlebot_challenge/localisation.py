@@ -181,7 +181,7 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
-        self.get_logger().info("Estimation x: {}, y: {}, theta: {}".format(self.positionx, self.positiony, self.angle))
+        #self.get_logger().info("Estimation x: {}, y: {}, theta: {}".format(self.positionx, self.positiony, self.angle))
 
         odom = Odometry()
 
