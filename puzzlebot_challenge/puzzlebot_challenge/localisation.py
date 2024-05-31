@@ -24,8 +24,8 @@ class Localisation(Node):
         self.wl = 0.0               # Left Wheel
         self.linear_speed = 0.0     # Linear Speed
         self.angular_speed = 0.0    # Angular Speed
-        self.l = 0.19               # Wheelbase
-        self.r = 0.05               # Radius of the Wheel
+        self.l = 0.17               # Wheelbase
+        self.r = 0.059              # Radius of the Wheel
         
         # Constants for error model
         self.kr = 0.5  #TODO Error coefficient for the right wheel
@@ -51,7 +51,7 @@ class Localisation(Node):
 
         # Start the timer now
         self.start_time = self.get_clock().now()
-        time_period = 0.1
+        time_period = 0.02
         self.timer = self.create_timer(time_period, self.odom_reading)
 
 
@@ -159,7 +159,7 @@ class Localisation(Node):
         sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
 
         # self.get_logger().info("Estimation x: {}, y: {}".format(self.positionx, self.positiony))
-        self.get_logger().info("Real x: {}, y: {}".format(u_true[0], u_true[1]))
+        # self.get_logger().info("Real x: {}, y: {}".format(u_true[0], u_true[1]))
 
         return sigma_full, u_true
 
@@ -181,16 +181,18 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
+        self.get_logger().info("Estimation x: {}, y: {}, theta: {}".format(self.positionx, self.positiony, self.angle))
+
         odom = Odometry()
 
-        if len(self.landmark.landmarks) > 0:
+        # if len(self.landmark.landmarks) > 0:
 
-            sigma_full, u_true = self.kalman_filter(previous_pose)
+        #     sigma_full, u_true = self.kalman_filter(previous_pose)
 
-            self.positionx = u_true[0][0]
-            self.positiony = u_true[1][0]
-            self.angle = u_true[2][0]
-            odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
+        #     self.positionx = u_true[0][0]
+        #     self.positiony = u_true[1][0]
+        #     self.angle = u_true[2][0]
+        #     odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
         
 
         # Publish odometry via odom topic

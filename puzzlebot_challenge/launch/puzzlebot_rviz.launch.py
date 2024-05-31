@@ -87,8 +87,8 @@ def generate_launch_description():
         localisation,
         # joint_state, 
         # controller
-        # trayectory,
-        # bug2,
+        trayectory,
+        bug2,
         aruco,
         #simlulation
     ])

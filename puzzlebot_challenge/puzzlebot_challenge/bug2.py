@@ -105,7 +105,7 @@ class Bug2Controller(Node):
             self.hitpoint = self.current_pose.pose.position  # Record the hitpoint
             self.current_state = StateMachine.WALL_FOLLOW  # Switch to WALL_FOLLOW state
         else:
-            self.cmd_vel.linear.x = 0.2
+            self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = 0.0
 
         self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
@@ -131,10 +131,10 @@ class Bug2Controller(Node):
             self.cmd_vel.linear.x = 0.0
             self.cmd_vel.angular.z = -0.1
         elif np.any((self.frontL_distance >= 0.25)):
-            self.cmd_vel.linear.x = 0.2
+            self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = 0.1
         elif np.any((self.frontL_distance < 0.10)):
-            self.cmd_vel.linear.x = 0.2
+            self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = -0.05
         else:
             self.cmd_vel.linear.x = 0.1
