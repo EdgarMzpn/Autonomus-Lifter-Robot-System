@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import numpy as np
-from geometry_msgs.msg import Point, Pose, Twist
+from geometry_msgs.msg import Point, Twist
 from nav_msgs.msg import Odometry
 from puzzlebot_msgs.msg import ArucoArray, Arucoinfo
 from std_msgs.msg import Int32, Float32, Bool
@@ -17,11 +17,20 @@ class ObjectHandler(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
 
         # Publishers
-        self.handled_pub = self.create_publisher(Bool, '/handled_arcuo', 1)
+        self.handled_pub = self.create_publisher(Bool, '/handled_aruco', 1)
         self.pick_or_drop_pub = self.create_publisher(Float32, '/ServoAngle', 1)
-        self.pose_pub = self.create_publisher(Pose, '/cmd_vel', 1)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 1)
 
         # Control variables
+        self.total_position_error = 0.0
+        self.angle_error = 0.0
+
+        self.prev_position_error = 0.0
+        self.prev_angle_error = 0.0
+
+        self.output_position = 0.0
+        self.output_angle = 0.0
+
         self.output_velocity = Twist()
         self.output_error = Point()
 
@@ -36,12 +45,24 @@ class ObjectHandler(Node):
         self.integral = 0.0
 
         self.aligned = False
+        self.aruco_handled = Bool()
 
-        # Aruco
+        # Aruco data
         self.aruco = Arucoinfo()
+        self.aruco_position_x = 0.0
+        self.aruco_position_y = 0.0
 
-        # Target position
-        self.target_x, self.target_y, self.target_angle = self.target_position()
+        # Target data
+        self.target = Point()
+        self.target.x = 0.0
+        self.target.y = 0.0
+        self.target.z = self.aruco.point.point.z
+        self.target_angle = 0.0
+
+        # Puzzlebot data
+        self.current_position_x = 0.0
+        self.current_position_y = 0.0
+        self.current_angle = 0.0
 
         # Start the timer now
         self.start_time = self.get_clock().now()
@@ -53,8 +74,12 @@ class ObjectHandler(Node):
     ##############################
 
     def aruco_callback(self, msg: ArucoArray):
-        self.aruco = msg.aruco_array[0]
-        self.transform_cube_position(self.aruco.point)
+        if msg.length > 0:
+            self.aruco = msg.aruco_array[0]
+            if self.aruco_position_x == 0.0 and self.aruco_position_y == 0.0:
+                self.transform_cube_position(self.aruco.point.point)
+                self.target_position()
+                self.transform_cube_position(self.target)
 
     def handle_callback(self, msg: Int32):
         self.handle = msg.data
@@ -72,16 +97,16 @@ class ObjectHandler(Node):
     ##############################
 
     def align_to_aruco(self):
-        # target_x, target_y, target_angle = self.target_position
+        # target.x, target.y, target_angle = self.target_position
 
         if not self.aligned:
-            self.aligned = self.velocity_control(self.target_x, self.target_y, self.target_angle)
+            self.aligned = self.velocity_control(self.target.x, self.target.y, self.target_angle)
         elif self.aligned:
-            aruco_handled = self.handle_aruco()
+            self.handle_aruco()
 
-        self.get_logger().info(f'Target: x={self.target_x} y={self.target_y}')
+        self.get_logger().info(f'Target: x={self.target.x} y={self.target.y}')
         
-        self.handled_pub.publish(aruco_handled)
+        self.handled_pub.publish(self.aruco_handled)
 
     def handle_aruco(self):
         # Angles at which servo needs to turn to execute action
@@ -90,7 +115,7 @@ class ObjectHandler(Node):
 
         arrived = self.velocity_control(self.aruco_position_x, self.aruco_position_y, self.current_angle)
 
-        if arrived and not aruco_handled:
+        if arrived and not self.aruco_handled.data:
             if self.handle == 0:
                 self.pick_or_drop_pub.publish(pick_up)
                 self.pick_or_drop_pub.publish(pick_up - 5)
@@ -98,9 +123,7 @@ class ObjectHandler(Node):
                 self.pick_or_drop_pub.publish(drop_off)
             
             # Step back
-            aruco_handled = self.velocity_control(self.aruco_position_x - 1, self.aruco_position_y - 1, self.current_angle)
-
-        return aruco_handled
+            self.aruco_handled.data = self.velocity_control(self.aruco_position_x - 1, self.aruco_position_y - 1, self.current_angle)
 
     ##############################
     # Target Data
@@ -113,9 +136,9 @@ class ObjectHandler(Node):
         left_bottom_corner_position = self.aruco.corners[left_bottom_corner_index]
         right_bottom_corner_position = self.aruco.corners[right_bottom_corner_index]
 
-        left_to_right_corner_length = np.sqrt(left_bottom_corner_position**2 + right_bottom_corner_position**2)
+        left_to_right_corner_length = np.sqrt((left_bottom_corner_position.x -right_bottom_corner_position.x)**2 + (left_bottom_corner_position.y - right_bottom_corner_position.y)**2)
         
-        aux_cathetus_lenght = np.abs(np.abs(left_bottom_corner_position.x) - np.abs(right_bottom_corner_position.x))
+        aux_cathetus_length = np.abs(np.abs(left_bottom_corner_position.x) - np.abs(right_bottom_corner_position.x))
 
         # Generate offset point
         # Direction vector
@@ -134,12 +157,10 @@ class ObjectHandler(Node):
         parallel_y2 = right_bottom_corner_position.y + parallel_offset * -normal_vector_y
 
         # Target
-        target_x = (parallel_x1 + parallel_x2) / 2
-        target_y = (parallel_y1 + parallel_y2) / 2
-        target_angle = np.arccos(aux_cathetus_lenght / left_to_right_corner_length) + self.current_angle
+        self.target.x = (parallel_x1 + parallel_x2) / 2
+        self.target.y = (parallel_y1 + parallel_y2) / 2
+        self.target_angle = np.arccos(aux_cathetus_length / left_to_right_corner_length) + self.current_angle
         # theta_deg = np.degrees(theta_rad)
-
-        return target_x, target_y, target_angle
 
     def transform_cube_position(self, aruco_point):
         rotation_matrix = np.array([
@@ -200,8 +221,8 @@ class ObjectHandler(Node):
         self.resultant_error(desired_position_x, desired_position_y, desired_angle)
 
         # Adjust current pose
-        self.output_position, self.prev_position_error = self.PID_General(self.total_position_error, self.prev_position_error, self.linear_kp, self.linear_ki, self.linear_kd)
-        self.output_angle, self.prev_angle_error = self.PID_General(self.angle_error, self.prev_angle_error, self.angular_kp, self.angular_ki, self.angular_kd)
+        self.output_position, self.prev_position_error = self.PID(self.total_position_error, self.prev_position_error, self.linear_kp, self.linear_ki, self.linear_kd)
+        self.output_angle, self.prev_angle_error = self.PID(self.angle_error, self.prev_angle_error, self.angular_kp, self.angular_ki, self.angular_kd)
         
         if abs(self.prev_angle_error) > 0.1:
             self.output_velocity.angular.z = self.output_angle
@@ -212,6 +233,8 @@ class ObjectHandler(Node):
 
         self.output_error.x = self.total_position_error
         self.output_error.y = self.prev_angle_error
+
+        self.cmd_vel_pub.publish(self.output_velocity)
 
         tolerance = 0.2
 
