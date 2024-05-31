@@ -124,7 +124,7 @@ class TrajectoryControl(Node):
                 self.current_state = StateMachine.WANDER
             else:
                 spin_msg = Twist()
-                spin_msg.angular.z = 0.5  # Velocidad angular en radianes por segundo
+                spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
                 self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
@@ -169,7 +169,7 @@ class TrajectoryControl(Node):
         elif self.current_state is StateMachine.GO_TO_TARGET:
             if self.aruco_info.length == 0 and self.arrived == True:
                 spin_msg = Twist()
-                spin_msg.angular.z = 0.5  # Velocidad angular en radianes por segundo
+                spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
                 self.velocity_pub.publish(spin_msg)
                 self.current_state = StateMachine.FIND_LANDMARK
             elif self.aruco_info.aruco_array[0].point.point.z < 0.35:
