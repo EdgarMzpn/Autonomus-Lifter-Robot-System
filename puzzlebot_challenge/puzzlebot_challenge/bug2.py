@@ -23,7 +23,7 @@ class Bug2Controller(Node):
         # Initialize various parameters and ROS node
         self.yaw = 0.0
         self.current_state = StateMachine.LOOK_TOGOAL
-
+        self.arrived = False
         # Initialize current pose of the robot
         self.current_pose = PoseStamped()
         self.current_pose.header.frame_id = "world"
@@ -58,6 +58,7 @@ class Bug2Controller(Node):
 
         # Initialize ROS publisher for velocity commands
         self.cmd_vel_pub = self.create_publisher( Twist, '/cmd_vel', 1)
+        self.arrive_pub = self.create_publisher( Bool, '/arrived', 1)
 
         # Initialize ROS subscribers for odometry, goal, and laser scan data
         self.create_subscription( Odometry, '/odom', self.odom_callback, 1)
@@ -182,9 +183,11 @@ class Bug2Controller(Node):
         elif self.current_state is StateMachine.STOP:
             self.cmd_vel.linear.x = 0.0
             self.cmd_vel.angular.z = 0.0
+            self.arrived = True
             print("Found goal!")
 
         self.cmd_vel_pub.publish(self.cmd_vel)  # Publish the velocity command
+        self.arrive_pub.publish(Bool(data = self.arrived))
         goal_distance = math.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)
 
         if goal_distance < 0.15:  # Stop if the goal is reached

@@ -64,13 +64,14 @@ class Localisation(Node):
 
     def aruco_callback(self, msg):
         self.aruco_info = msg
-        self.landmarks.landmarks = []
-        for aruco in self.aruco_info.aruco_array:
-            if aruco.id != self.cube_id:
-                landmark = Landmark()
-                landmark.id = aruco.id
-                landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
-                self.landmarks.landmarks.append(landmark)
+        self.landmark.landmarks = []
+        if self.aruco_info.length != 0:
+            for aruco in self.aruco_info.aruco_array:
+                if aruco.id != self.cube_id:
+                    landmark = Landmark()
+                    landmark.id = aruco.id
+                    landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
+                    self.landmark.landmarks.append(landmark)
 
     def transform_cube_position(self, aruco_point):
         rotation_matrix = np.array([
@@ -180,7 +181,9 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
-        if len(self.landmark.landmarks) < 0:
+        odom = Odometry()
+
+        if len(self.landmark.landmarks) > 0:
 
             sigma_full, u_true = self.kalman_filter(previous_pose)
 
@@ -191,7 +194,6 @@ class Localisation(Node):
         
 
         # Publish odometry via odom topic
-        odom = Odometry()
         odom.header.stamp = self.current_time
         odom.header.frame_id = "odom"  # Set the frame id to "odom"
         odom.child_frame_id = "base_link"  # Set the child frame id to "base_link"

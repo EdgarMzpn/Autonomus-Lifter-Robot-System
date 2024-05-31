@@ -56,10 +56,10 @@ class QRCodeTracker(Node):
         (corners, ids, rejected) = cv2.aruco.detectMarkers(cv_image, arucoDict, parameters=arucoParams)
         
 
+        aruco_array = ArucoArray()
+        aruco_array.aruco_array = []
         if corners:
-            aruco_array = ArucoArray()
             aruco_array.length = len(corners)
-            aruco_array.aruco_array = []
              # Intrinsic parameters
             fx = self.intrinsics['fx']
             fy = self.intrinsics['fy']
@@ -108,8 +108,9 @@ class QRCodeTracker(Node):
                 aruco_info.corners.append(Point(x=float(sorted_corners[2][0]), y = float(sorted_corners[2][1])))
                 aruco_info.corners.append(Point(x=float(sorted_corners[3][0]), y = float(sorted_corners[3][1])))
                 aruco_array.aruco_array.append(aruco_info)
-                
-            self.qr_pub.publish(aruco_array)
+        else:
+            aruco_array.length = 0        
+        self.qr_pub.publish(aruco_array)
 
         # cv2.imshow("Aruco Tracking", cv_image)
         # cv2.waitKey(1)
