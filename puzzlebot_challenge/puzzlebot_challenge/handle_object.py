@@ -110,7 +110,7 @@ class ObjectHandler(Node):
         # self.second_target_x, self.second_target_y, self.second_target_angle = self.target_position(0)
 
         if not self.aligned:
-            self.aligned = self.velocity_control(self.current_position_x + 0.1, self.current_position_y + 0.1)
+            self.aligned = self.velocity_control()
         elif self.aligned:
             self.handle_aruco()
 
@@ -151,21 +151,21 @@ class ObjectHandler(Node):
         
         return output, error
 
-    def resultant_error(self, desired_position_x, desired_position_y):
-        x_error = desired_position_x - self.current_position_x
-        y_error = desired_position_y - self.current_position_y
-
-        self.total_position_error = np.sqrt(x_error**2 + y_error**2)
+    def resultant_error(self):
+        # x_error = desired_position_x - self.current_position_x
+        # y_error = desired_position_y - self.current_position_y
 
         # desired_angle = np.arctan2(y_error, x_error)
         # self.angle_error = desired_angle - self.current_angle
         offset_scaling = 0.002
         self.angle_error = self.left_aruco.offset * offset_scaling + self.right_aruco.offset * offset_scaling
+        # self.total_position_error = np.sqrt(x_error**2 + y_error**2)
+        self.total_position_error = self.angle_error
         
         # Normalize angle to be within [-π, π]
         # self.angle_error = np.arctan2(np.sin(self.angle_error), np.cos(self.angle_error))
 
-    def velocity_control(self, desired_position_x, desired_position_y):
+    def velocity_control(self):
         #Get time difference 
         self.current_time = self.start_time.to_msg()
         self.duration = self.get_clock().now() - self.start_time
@@ -174,7 +174,7 @@ class ObjectHandler(Node):
         self.dt = self.duration.nanoseconds * 1e-9
 
         # Calculate resultant error
-        self.resultant_error(desired_position_x, desired_position_y)
+        self.resultant_error()
 
         # Adjust current pose
         self.output_position, self.prev_position_error = self.PID(self.total_position_error, self.prev_position_error, self.linear_kp, self.linear_ki, self.linear_kd)
@@ -195,16 +195,15 @@ class ObjectHandler(Node):
         # self.output_error.x = self.total_position_error
         # self.output_error.y = self.prev_angle_error
 
-        self.cmd_vel_pub.publish(self.output_velocity)
-
         tolerance = 0.1
 
         if self.angle_error < tolerance and self.angle_error > -tolerance:
-            arrive = True
-        else:
-            arrive= False
+            self.output_velocity.linear.x = 0.0
+            self.output_velocity.angular.z = 0.0
+            self.cmd_vel_pub.publish(self.output_velocity)
+            return True
 
-        return arrive
+        self.cmd_vel_pub.publish(self.output_velocity)
 
 def main(args=None):
     rclpy.init(args=args)
