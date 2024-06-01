@@ -137,64 +137,6 @@ class ObjectHandler(Node):
             self.aruco_handled.data = self.velocity_control(self.current_position_x - 0.1, self.current_position_y - 0.1)
 
     ##############################
-    # Target Data
-    ##############################
-
-    # def target_position(self, parallel_offset):
-    #     # left_corner_position_x, left_corner_position_y = 0.0, 0.0
-    #     # right_corner_position_x, right_corner_position_y = 0.0, 0.0
-
-    #     # if abs(self.left_aruco.offset) > abs(self.right_aruco.offset):
-    #     #     left_corner_position_x, left_corner_position_y = self.left_aruco_position_x , self.left_aruco_position_y
-    #     #     right_corner_position_x, right_corner_position_y = self.right_aruco_position_x , self.right_aruco_position_y
-    #     # elif abs(self.left_aruco.offset) < abs(self.right_aruco.offset):
-    #     #     left_corner_position_x, left_corner_position_y = self.right_aruco_position_x , self.right_aruco_position_y
-    #     #     right_corner_position_x, right_corner_position_y = self.left_aruco_position_x , self.left_aruco_position_y
-
-    #     left_to_right_corner_length = np.sqrt((self.left_aruco_position_x - self.right_aruco_position_x)**2 + (self.left_aruco_position_y - self.right_aruco_position_y)**2)
-        
-    #     aux_cathetus_length = np.abs(np.abs(self.left_aruco_position_x) - np.abs(self.right_aruco_position_x))
-
-    #     # Generate offset point
-    #     # Direction vector
-    #     vector_x = self.left_aruco_position_x - self.right_aruco_position_x
-    #     vector_y = self.left_aruco_position_y - self.right_aruco_position_y
-
-    #     # Normalized Perpendicual vector
-    #     normal_vector_x = -vector_x / left_to_right_corner_length
-    #     normal_vector_y = vector_y / left_to_right_corner_length
-
-    #     # Paralel line
-    #     parallel_x1 = self.left_aruco_position_x + parallel_offset * -normal_vector_x
-    #     parallel_y1 = self.left_aruco_position_y + parallel_offset * -normal_vector_y
-    #     parallel_x2 = self.right_aruco_position_x + parallel_offset * -normal_vector_x
-    #     parallel_y2 = self.right_aruco_position_y + parallel_offset * -normal_vector_y
-
-    #     # Target
-    #     target_x = (parallel_x1 + parallel_x2) / 2
-    #     target_y = (parallel_y1 + parallel_y2) / 2
-    #     target_angle = np.arccos(aux_cathetus_length / left_to_right_corner_length) + self.current_angle
-    #     # theta_deg = np.degrees(theta_rad)
-
-    #     return target_x, target_y, target_angle
-
-    # def transform_cube_position(self, point):
-    #     rotation_matrix = np.array([
-    #                 [np.cos(self.current_angle), -np.sin(self.current_angle)],
-    #                 [np.sin(self.current_angle), np.cos(self.current_angle)]
-    #             ])
-
-    #     # Camera coordinates to robot coordinates
-    #     puzzlebot_coords = np.array([point.z, point.x])
-    #     world_coords = rotation_matrix.dot(puzzlebot_coords)
-
-    #     # Robot coordinates to odometry coordinates
-    #     point_x = world_coords[0] + self.current_position_x
-    #     point_y = world_coords[1] + self.current_position_y
-
-    #     return point_x, point_y
-
-    ##############################
     # Velocity Control
     ##############################
 
