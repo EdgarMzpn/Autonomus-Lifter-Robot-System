@@ -38,7 +38,7 @@ class ObjectHandler(Node):
         self.linear_ki = 0.0
         self.linear_kd = 0.05
 
-        self.angular_kp = 0.07
+        self.angular_kp = 0.05
         self.angular_ki = 0.0
         self.angular_kd = 0.02
 
@@ -151,16 +151,15 @@ class ObjectHandler(Node):
         
         return output, error
 
-    def resultant_error(self):
-        # x_error = desired_position_x - self.current_position_x
-        # y_error = desired_position_y - self.current_position_y
+    def resultant_error(self, desired_position_x, desired_position_y):
+        x_error = desired_position_x - self.current_position_x
+        y_error = desired_position_y - self.current_position_y
 
         # desired_angle = np.arctan2(y_error, x_error)
         # self.angle_error = desired_angle - self.current_angle
-        offset_scaling = 0.002
+        offset_scaling = 0.001
         self.angle_error = self.left_aruco.offset * offset_scaling + self.right_aruco.offset * offset_scaling
-        # self.total_position_error = np.sqrt(x_error**2 + y_error**2)
-        self.total_position_error = self.angle_error
+        self.total_position_error = np.sqrt(x_error**2 + y_error**2)
         
         # Normalize angle to be within [-π, π]
         # self.angle_error = np.arctan2(np.sin(self.angle_error), np.cos(self.angle_error))
@@ -174,7 +173,7 @@ class ObjectHandler(Node):
         self.dt = self.duration.nanoseconds * 1e-9
 
         # Calculate resultant error
-        self.resultant_error()
+        self.resultant_error(self.current_position_x + 0.1, self.current_position_y + 0.1)
 
         # Adjust current pose
         self.output_position, self.prev_position_error = self.PID(self.total_position_error, self.prev_position_error, self.linear_kp, self.linear_ki, self.linear_kd)
@@ -195,7 +194,7 @@ class ObjectHandler(Node):
         # self.output_error.x = self.total_position_error
         # self.output_error.y = self.prev_angle_error
 
-        tolerance = 0.1
+        tolerance = 0.000000000000000
 
         if self.angle_error < tolerance and self.angle_error > -tolerance:
             self.output_velocity.linear.x = 0.0
