@@ -25,7 +25,7 @@ class Localisation(Node):
         self.linear_speed = 0.0     # Linear Speed
         self.angular_speed = 0.0    # Angular Speed
         self.l = 0.17               # Wheelbase
-        self.r = 0.059              # Radius of the Wheel
+        self.r = 0.055              # Radius of the Wheel
         
         # Constants for error model
         self.kr = 0.5  #TODO Error coefficient for the right wheel

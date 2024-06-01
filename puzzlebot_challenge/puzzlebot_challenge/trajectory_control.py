@@ -91,20 +91,20 @@ class TrajectoryControl(Node):
         }
 
         # Configurar las coordenadas de cada punto
-        self.arucos['A'].pose.position.x = 3.1
+        self.arucos['A'].pose.position.x = 2.9
         self.arucos['A'].pose.position.y = 2.82
         self.arucos['A'].pose.position.z = 0.0
-        self.arucos['A'].pose.header.frame_id = 'world'
+        self.arucos['A'].header.frame_id = 'world'
 
         self.arucos['B'].pose.position.x = 3.0
         self.arucos['B'].pose.position.y = 5.0
         self.arucos['B'].pose.position.z = 0.0
-        self.arucos['B'].pose.header.frame_id = 'world'
+        self.arucos['B'].header.frame_id = 'world'
 
         self.arucos['C'].pose.position.x = -1.0
         self.arucos['C'].pose.position.y = 0.0
         self.arucos['C'].pose.position.z = 0.0
-        self.arucos['C'].pose.header.frame_id = 'world'
+        self.arucos['C'].header.frame_id = 'world'
 
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
@@ -139,6 +139,7 @@ class TrajectoryControl(Node):
         self.arrived = msg.data
 
     def run(self):
+        self.get_logger().info(f"Pose to goal: {np.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)}")
         if self.current_state is StateMachine.FIND_LANDMARK:
             self.get_logger().info(f"Entering FIND_LANDMARK")
             if self.aruco_info:
@@ -200,13 +201,13 @@ class TrajectoryControl(Node):
             if self.aruco_info.length > 0 and self.carga == False:
                 if self.aruco_info.aruco_array[0].point.point.z < 0.5:
                     stop_spin_msg = Twist()
-                    self.velocity_pub(stop_spin_msg)
+                    self.velocity_pub.publish(stop_spin_msg)
                     self.current_state = StateMachine.HANDLE_OBJECT
                 else:
-                    self.get_logger().info(f"Entrando a bug_pug")
+                    #self.get_logger().info(f"Entrando a bug_pug")
                     self.bug_pub.publish(Bool(data=True))
             else:
-                self.get_logger().info(f"Entering a bug_pug")
+                #self.get_logger().info(f"Entering a bug_pug")
                 self.bug_pub.publish(Bool(data=True))
 
         elif self.current_state is StateMachine.HANDLE_OBJECT:
@@ -214,6 +215,7 @@ class TrajectoryControl(Node):
             if self.aruco_info.length == 0:
                 pose = self.arucos['A']
                 self.goal_pub.publish(pose)
+                self.goal = pose
                 self.carga = True
                 self.current_state = StateMachine.GO_TO_TARGET
             # Funciones comentadas
