@@ -38,7 +38,7 @@ class ObjectHandler(Node):
         self.linear_ki = 0.0
         self.linear_kd = 0.05
 
-        self.angular_kp = 0.05
+        self.angular_kp = 0.07
         self.angular_ki = 0.0
         self.angular_kd = 0.02
 
@@ -197,9 +197,9 @@ class ObjectHandler(Node):
 
         self.cmd_vel_pub.publish(self.output_velocity)
 
-        tolerance = 0.2
+        tolerance = 0.1
 
-        if self.total_position_error < tolerance and self.total_position_error > -tolerance:
+        if self.angle_error < tolerance and self.angle_error > -tolerance:
             arrive = True
         else:
             arrive= False
