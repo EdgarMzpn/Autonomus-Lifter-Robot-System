@@ -48,6 +48,7 @@ class ObjectHandler(Node):
         self.aruco_handled = Bool()
 
         # Aruco data
+        self.aruco_array = ArucoArray()
         self.left_aruco = Arucoinfo()
         self.right_aruco = Arucoinfo()
         self.left_aruco_position_x = 0.0
@@ -79,6 +80,7 @@ class ObjectHandler(Node):
     ##############################
 
     def aruco_callback(self, msg: ArucoArray):
+        self.aruco_array = msg
         if msg.length > 1:
             # if self.left_aruco_position_x == 0.0 and self.right_aruco_position_x == 0.0:
             for index in range (0, msg.length):
@@ -112,6 +114,7 @@ class ObjectHandler(Node):
         if not self.aligned:
             self.aligned = self.velocity_control()
         elif self.aligned:
+            self.handle = '0'
             self.handle_aruco()
 
         # self.get_logger().info(f'First Target: x={self.first_target_x} y={self.first_target_y} angle={self.first_target_angle}')
@@ -194,9 +197,12 @@ class ObjectHandler(Node):
         # self.output_error.x = self.total_position_error
         # self.output_error.y = self.prev_angle_error
 
-        tolerance = 0.000000000000000
+        # tolerance = 0.000000000000000
 
-        if self.angle_error < tolerance and self.angle_error > -tolerance:
+        if self.aruco_array.length == 0:
+            self.output_velocity.linear.x = 0.5
+            self.output_velocity.angular.z = 0.5
+            self.cmd_vel_pub.publish(self.output_velocity)
             self.output_velocity.linear.x = 0.0
             self.output_velocity.angular.z = 0.0
             self.cmd_vel_pub.publish(self.output_velocity)
