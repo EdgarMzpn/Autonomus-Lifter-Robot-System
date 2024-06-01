@@ -164,8 +164,8 @@ class TrajectoryControl(Node):
 
     def run(self):
         self.get_logger().info(f"Pose to goal: {np.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)}")
+        self.get_logger().info(f"State: {self.current_state}")
         if self.current_state is StateMachine.FIND_LANDMARK:
-            self.get_logger().info(f"Entering FIND_LANDMARK")
             if self.aruco_info:
                 stop_spin_msg = Twist()
                 self.velocity_pub.publish(stop_spin_msg)
@@ -177,7 +177,7 @@ class TrajectoryControl(Node):
                 self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
-            self.get_logger().info(f"Entering WANDER")
+            # self.get_logger().info(f"Entering WANDER")
             if self.aruco_info.length > 0:
                 if self.aruco_info.aruco_array[0].id == self.cube_id:
                     self.goal.pose.position.x, self.goal.pose.position.y = self.transform_cube_position(self.aruco_info.aruco_array[0].point.point)
@@ -186,7 +186,7 @@ class TrajectoryControl(Node):
 
             
         elif self.current_state is StateMachine.GO_TO_TARGET:
-            self.get_logger().info(f"Entering GO_TO_TARGET")
+            # self.get_logger().info(f"Entering GO_TO_TARGET")
             # if self.aruco_info.length == 0 and self.arrived == True:
             #     spin_msg = Twist()
             #     spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
@@ -211,24 +211,28 @@ class TrajectoryControl(Node):
                 self.bug_pub.publish(Bool(data=True))
 
         elif self.current_state is StateMachine.HANDLE_OBJECT:
-            self.get_logger().info(f"Entering HANDLE_OBJECT")
-            if self.aruco_info.length == 0:
-                self.goal = self.arucos['A']
-                self.goal_pub.publish(self.goal)
-                self.current_state = StateMachine.GO_TO_TARGET
+            # self.get_logger().info(f"Entering HANDLE_OBJECT")
+            # if self.aruco_info.length == 0:
+            #     self.goal = self.arucos['A']
+            #     self.goal_pub.publish(self.goal)
+            #     self.current_state = StateMachine.GO_TO_TARGET
             # Funciones comentadas
-            # if self.carga:
-            #     if self.object_state == "lifted":
-            #         self.goal = self.arucos['A']
-            #         self.goal_pub.publish(self.goal)
-            #         self.current_state = StateMachin.GO_TO_TARGET
-            #     elif self.object_state == "dropped":
-            #         self.goal.pose.position.x = 0.0
-            #         self.goal.pose.position.y = 0.0
-            #         self.goal_pub.publish(self.goal)
-            #         self.current_state = StateMachine.GO_TO_TARGET
-            # else:
-            #     self.handle_pub.publish(Bool(data = True))
+            if self.carga:
+                if self.object_state == "lifted":
+                    self.goal = self.arucos['A']
+                    self.goal_pub.publish(self.goal)
+                    self.current_state = StateMachine.GO_TO_TARGET
+                    self.object_state = ''
+                elif self.object_state == "dropped":
+                    self.goal.pose.position.x = 0.0
+                    self.goal.pose.position.y = 0.0
+                    self.goal_pub.publish(self.goal)
+                    self.current_state = StateMachine.STOP
+                    self.object_state = ''
+                else: 
+                    self.handle_pub.publish(Bool(data = True))
+            else:
+                self.handle_pub.publish(Bool(data = True))
             pass
 
         elif self.current_state is StateMachine.STOP:
