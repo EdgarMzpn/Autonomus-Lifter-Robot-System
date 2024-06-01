@@ -38,7 +38,7 @@ class TrajectoryControl(Node):
         self.goal_pub = self.create_publisher(PoseStamped, '/goal', 1)
         self.landmarks_pub = self.create_publisher(LandmarkList, '/landmarks', 1)
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
-        self.handle_run_pub = self.create_publisher(Bool, '/hanlde_run', 1)
+        self.handle_run_pub = self.create_publisher(Bool, '/handle_run', 1)
         self.handle_pub = self.create_publisher(Int32, '/handle', 10)
         
         # Inicialización de la pose y ángulo actual
@@ -91,11 +91,6 @@ class TrajectoryControl(Node):
         #Creación del diccionario de arucos
         self.station = Arucoinfo()
         self.station_on_sight = False
-        self.arucos = {
-            'A': PoseStamped(),
-            'B': PoseStamped(),
-            'C': PoseStamped()
-        }
 
         self.goal_ids = {
             '1': 'A',
@@ -104,21 +99,13 @@ class TrajectoryControl(Node):
         }
 
         # Configurar las coordenadas de cada punto
-        self.arucos['A'].pose.position.x = 2.9
-        self.arucos['A'].pose.position.y = 2.82
-        self.arucos['A'].pose.position.z = 0.0
-        self.arucos['A'].header.frame_id = 'world'
+        self.convergence_point = PoseStamped()
+        self.convergence_point.pose.position.x = 2.2
+        self.convergence_point.pose.position.y = 1.9
+        self.convergence_point.pose.position.z = 0.0
+        self.convergence_point.header.frame_id = 'world'
 
-        self.arucos['B'].pose.position.x = 3.0
-        self.arucos['B'].pose.position.y = 5.0
-        self.arucos['B'].pose.position.z = 0.0
-        self.arucos['B'].header.frame_id = 'world'
-
-        self.arucos['C'].pose.position.x = -1.0
-        self.arucos['C'].pose.position.y = 0.0
-        self.arucos['C'].pose.position.z = 0.0
-        self.arucos['C'].header.frame_id = 'world'
-
+      
     def odometry_callback(self, msg: Odometry):
         self.current_pose.pose = msg.pose.pose
         orientation_euler = euler_from_quaternion([
@@ -166,10 +153,13 @@ class TrajectoryControl(Node):
         self.get_logger().info(f"Pose to goal: {np.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)}")
         self.get_logger().info(f"State: {self.current_state}")
         if self.current_state is StateMachine.FIND_LANDMARK:
-            if self.aruco_info:
+            if self.aruco_info.length < 0:
                 stop_spin_msg = Twist()
                 self.velocity_pub.publish(stop_spin_msg)
                 self.current_state = StateMachine.WANDER
+                if self.object_state == 'lifted' and self.arrived:
+                    self.handle_pub.publish(Int32(data = 1))
+                    self.current_state = StateMachine.HANDLE_OBJECT
             else:
                 spin_msg = Twist()
                 spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
@@ -196,16 +186,18 @@ class TrajectoryControl(Node):
                 if self.aruco_info.aruco_array[0].id == self.cube_id and self.aruco_info.aruco_array[0].point.point.z < 0.5:
                     stop_spin_msg = Twist()
                     self.velocity_pub.publish(stop_spin_msg)
-                    self.handle_pub.publish(Int32(data = 0.0))
+                    self.handle_pub.publish(Int32(data = 0))
                     self.current_state = StateMachine.HANDLE_OBJECT
-                elif self.station_on_sight and self.station.point.point.z < 0.5:
-                    stop_spin_msg = Twist()
-                    self.velocity_pub.publish(stop_spin_msg)
-                    self.handle_pub.publish(Int32(data = 1.0))
-                    self.current_state = StateMachine.HANDLE_OBJECT
+                # elif self.station_on_sight and self.station.point.point.z < 0.5:
+                #     stop_spin_msg = Twist()
+                #     self.velocity_pub.publish(stop_spin_msg)
+                #     self.handle_pub.publish(Int32(data = 1))
+                #     self.current_state = StateMachine.HANDLE_OBJECT
                 else:
                     #self.get_logger().info(f"Entrando a bug_pug")
                     self.bug_pub.publish(Bool(data=True))
+            elif self.object_state == 'lifted' and self.arrived:
+                self.current_state = StateMachine.FIND_LANDMARK
             else:
                 #self.get_logger().info(f"Entering a bug_pug")
                 self.bug_pub.publish(Bool(data=True))
@@ -219,10 +211,9 @@ class TrajectoryControl(Node):
             # Funciones comentadas
             if self.carga:
                 if self.object_state == "lifted":
-                    self.goal = self.arucos['A']
+                    self.goal = self.convergence_point
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
-                    self.object_state = ''
                 elif self.object_state == "dropped":
                     self.goal.pose.position.x = 0.0
                     self.goal.pose.position.y = 0.0
@@ -230,9 +221,9 @@ class TrajectoryControl(Node):
                     self.current_state = StateMachine.STOP
                     self.object_state = ''
                 else: 
-                    self.handle_pub.publish(Bool(data = True))
+                    self.handle_run_pub.publish(Bool(data = True))
             else:
-                self.handle_pub.publish(Bool(data = True))
+                self.handle_run_pub.publish(Bool(data = True))
             pass
 
         elif self.current_state is StateMachine.STOP:
