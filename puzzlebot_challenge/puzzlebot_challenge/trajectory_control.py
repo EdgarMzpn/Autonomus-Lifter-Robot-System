@@ -86,7 +86,7 @@ class TrajectoryControl(Node):
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
         self.arrived = None
-        self.carga = False
+        self.carga = True
 
         #Creación del diccionario de arucos
         self.station = Arucoinfo()
