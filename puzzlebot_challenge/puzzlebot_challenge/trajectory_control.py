@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import numpy as np
-from std_msgs.msg import Float32MultiArray, Float32, Bool
+from std_msgs.msg import Float32MultiArray, Int32, Bool, String
 from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
@@ -30,12 +30,16 @@ class TrajectoryControl(Node):
         self.lidar_sub = self.create_subscription(LaserScan, '/filtered_scan', self.lidar_callback, 10)
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
         self.arrived_sub = self.create_subscription(Bool, '/arrived', self.arrived_callback, 10)
+        self.handled_sub = self.create_subscription(Bool, '/handled_aruco', self.handled_callback, 10)
+        self.object_sub = self.create_subscription(String, '/object_state', self.object_state_callback, 10)
 
         # Publicadores
         self.velocity_pub = self.create_publisher(Twist, '/cmd_vel', 1)
         self.goal_pub = self.create_publisher(PoseStamped, '/goal', 1)
         self.landmarks_pub = self.create_publisher(LandmarkList, '/landmarks', 1)
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
+        self.handle_run_pub = self.create_publisher(Bool, '/hanlde_run', 1)
+        self.handle_pub = self.create_publisher(Int32, '/handle', 10)
         
         # Inicialización de la pose y ángulo actual
         self.current_pose = PoseStamped()
@@ -66,6 +70,7 @@ class TrajectoryControl(Node):
         self.cmd_vel = None
     
         self.cube_id = '2'
+        self.object_state = ""
 
         self.aruco_info = ArucoArray()
         self.aruco_info.length = 0
@@ -84,10 +89,18 @@ class TrajectoryControl(Node):
         self.carga = False
 
         #Creación del diccionario de arucos
+        self.station = Arucoinfo()
+        self.station_on_sight = False
         self.arucos = {
             'A': PoseStamped(),
             'B': PoseStamped(),
             'C': PoseStamped()
+        }
+
+        self.goal_ids = {
+            '1': 'A',
+            '13': 'B',
+            '3': 'C'
         }
 
         # Configurar las coordenadas de cada punto
@@ -118,8 +131,19 @@ class TrajectoryControl(Node):
 
     def aruco_callback(self, msg):
         self.aruco_info = msg
+        for aruco in self.aruco_info.aruco_array:
+            if aruco.id == '1':
+                self.station = aruco
+                break
+        
+                
     def lidar_callback(self, msg):
         self.distances = np.array(msg.ranges)
+    def handled_callback(self, msg):
+        self.carga = msg.data
+
+    def object_state_callback(self, msg):
+        self.object_state = msg.data
 
     def transform_cube_position(self, aruco_point):
         rotation_matrix = np.array([
@@ -160,37 +184,7 @@ class TrajectoryControl(Node):
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
 
-            #elif np.any(self.distances) and self.wandergoal == False:
-                #angles = np.linspace(-pi/2, pi/2, len(self.distances))
-                #points = [r * sin(theta) if (theta < -1.0 or theta > 1.0) else inf for r, theta in zip(self.distances, angles)]
-                #new_ranges = [r if abs(y) < self.extent else inf for r, y in zip(self.distances, points)]
-                #self.distances = new_ranges
-
-                # Filtrar los valores válidos
-                #valid_distances = [r for r in self.distances if not np.isinf(r) and not np.isnan(r)]
-
-                #if valid_distances:
-                    #max_index = np.argmax(valid_distances)
-                    #max_range = valid_distances[max_index]
-
-                    #self.get_logger().info(f"Wandering: Max distance = {max_range:.2f} meters at angle = {np.degrees(angles[max_index]):.2f} degrees")
-
-                    #robot_x = self.current_pose.pose.position.x
-                    #robot_y = self.current_pose.pose.position.y
-                    #robot_theta = self.current_angle
-
-                    #goal_x = robot_x + max_range * cos(robot_theta + angles[max_index])
-                    #goal_y = robot_y + max_range * sin(robot_theta + angles[max_index])
-
-                    #self.goal.pose.position.x = goal_x
-                    #self.goal.pose.position.y = goal_y
-                    #self.goal_pub.publish(self.goal)
-                    #self.get_logger().info(f"Published goal: x = {goal_x:.2f}, y = {goal_y:.2f}")
-                    #self.wandergoal = True
-                    #self.current_state = StateMachine.GO_TO_TARGET
-                #else:
-                    #self.get_logger().info("Wandering: No valid max range found")
-
+            
         elif self.current_state is StateMachine.GO_TO_TARGET:
             self.get_logger().info(f"Entering GO_TO_TARGET")
             # if self.aruco_info.length == 0 and self.arrived == True:
@@ -199,9 +193,15 @@ class TrajectoryControl(Node):
             #     self.velocity_pub.publish(spin_msg)
             #     self.current_state = StateMachine.FIND_LANDMARK
             if self.aruco_info.length > 0 and self.carga == False:
-                if self.aruco_info.aruco_array[0].point.point.z < 0.5:
+                if self.aruco_info.aruco_array[0].id == self.cube_id and self.aruco_info.aruco_array[0].point.point.z < 0.5:
                     stop_spin_msg = Twist()
                     self.velocity_pub.publish(stop_spin_msg)
+                    self.handle_pub.publish(Int32(data = 0.0))
+                    self.current_state = StateMachine.HANDLE_OBJECT
+                elif self.station_on_sight and self.station.point.point.z < 0.5:
+                    stop_spin_msg = Twist()
+                    self.velocity_pub.publish(stop_spin_msg)
+                    self.handle_pub.publish(Int32(data = 1.0))
                     self.current_state = StateMachine.HANDLE_OBJECT
                 else:
                     #self.get_logger().info(f"Entrando a bug_pug")
@@ -213,18 +213,22 @@ class TrajectoryControl(Node):
         elif self.current_state is StateMachine.HANDLE_OBJECT:
             self.get_logger().info(f"Entering HANDLE_OBJECT")
             if self.aruco_info.length == 0:
-                pose = self.arucos['A']
-                self.goal_pub.publish(pose)
-                self.goal = pose
-                self.carga = True
+                self.goal = self.arucos['A']
+                self.goal_pub.publish(self.goal)
                 self.current_state = StateMachine.GO_TO_TARGET
             # Funciones comentadas
-            # if self.handle.picked:
-            #     self.current_state = StateMachine.GO_TO_TARGET
-            # elif self.handle.placed:
-            #     self.current_state = StateMachine.STOP
+            # if self.carga:
+            #     if self.object_state == "lifted":
+            #         self.goal = self.arucos['A']
+            #         self.goal_pub.publish(self.goal)
+            #         self.current_state = StateMachin.GO_TO_TARGET
+            #     elif self.object_state == "dropped":
+            #         self.goal.pose.position.x = 0.0
+            #         self.goal.pose.position.y = 0.0
+            #         self.goal_pub.publish(self.goal)
+            #         self.current_state = StateMachine.GO_TO_TARGET
             # else:
-            #     self.handle.run()
+            #     self.handle_pub.publish(Bool(data = True))
             pass
 
         elif self.current_state is StateMachine.STOP:
