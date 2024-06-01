@@ -88,7 +88,7 @@ class QRCodeTracker(Node):
 
                 # focal_length_pixels = self.focal_length_mm * (self.image_width_pixels / self.sensor_width_mm)
                 # depth = (focal_length_pixels * self.object_width_real) / w
-                offset = int(self.width/2 - (x+w/2))
+                offset = int(self.width/2 - x)
                 cv2.aruco.drawDetectedMarkers(cv_image, corners)
                 coords = str(np.round(x_3d, 2)) + ", " + str(np.round(y_3d, 2)) + ", " + str(np.round(z_3d, 2))
                 cv2.putText(cv_image, coords, (x , y ), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
