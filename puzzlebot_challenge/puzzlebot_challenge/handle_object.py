@@ -124,17 +124,11 @@ class ObjectHandler(Node):
         drop_off = 0.0
         pick_up = 70.0
 
-        arrived = self.velocity_control(self.current_position_x + 0.1, self.current_position_y + 0.1)
-
-        if arrived and not self.aruco_handled.data:
-            if self.handle == '0':
-                self.pick_or_drop_pub.publish(pick_up)
-                self.pick_or_drop_pub.publish(pick_up - 5)
-            elif self.handle == '1':
-                self.pick_or_drop_pub.publish(drop_off)
-            
-            # Step back
-            self.aruco_handled.data = self.velocity_control(self.current_position_x - 0.1, self.current_position_y - 0.1)
+        if self.handle == '0':
+            self.pick_or_drop_pub.publish(pick_up)
+            self.pick_or_drop_pub.publish(pick_up - 5)
+        elif self.handle == '1':
+            self.pick_or_drop_pub.publish(drop_off)
 
     ##############################
     # Velocity Control
