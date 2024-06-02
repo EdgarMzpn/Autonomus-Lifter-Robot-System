@@ -78,6 +78,11 @@ def generate_launch_description():
         name='Bug2'
     )
 
+    handle = Node(
+        package='puzzlebot_challenge',
+        executable='handle_object',
+        name='handle_object'
+    )
 
     return LaunchDescription([
         # robot_state_publisher_node,
@@ -90,6 +95,7 @@ def generate_launch_description():
         trayectory,
         bug2,
         aruco,
+        handle,
         #simlulation
     ])
 
