@@ -16,6 +16,7 @@ class ObjectHandler(Node):
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
         self.handle_sub = self.create_subscription(Int32, '/handle', self.handle_callback, 10)
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        self.handle_run_sub = self.create_publisher(Bool, '/handle_run', self.align_to_aruco, 10)
 
         # Publishers
         self.handled_pub = self.create_publisher(Bool, '/handled_aruco', 1)
@@ -72,9 +73,9 @@ class ObjectHandler(Node):
         self.current_angle = 0.0
 
         # Start the timer now
-        self.start_time = self.get_clock().now()
-        time_period = 0.1
-        self.timer = self.create_timer(time_period, self.align_to_aruco)
+        # self.start_time = self.get_clock().now()
+        # time_period = 0.1
+        # self.timer = self.create_timer(time_period, self.align_to_aruco)
 
     ##############################
     # Callback Functions
@@ -107,7 +108,7 @@ class ObjectHandler(Node):
     # Handling Object
     ##############################
 
-    def align_to_aruco(self):
+    def align_to_aruco(self, msg):
         # target.x, target.y, target_angle = self.target_position
         # self.first_target_x, self.first_target_y, self.first_target_angle = self.target_position(1)
         # self.second_target_x, self.second_target_y, self.second_target_angle = self.target_position(0)
