@@ -16,7 +16,7 @@ class ObjectHandler(Node):
         self.aruco_sub = self.create_subscription(ArucoArray, '/aruco_info', self.aruco_callback, 10)
         self.handle_sub = self.create_subscription(Int32, '/handle', self.handle_callback, 10)
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.handle_run_sub = self.create_publisher(Bool, '/handle_run', self.align_to_aruco, 10)
+        self.handle_run_sub = self.create_subscription(Bool, '/handle_run', self.align_to_aruco, 1)
 
         # Publishers
         self.handled_pub = self.create_publisher(Bool, '/handled_aruco', 1)
@@ -72,8 +72,9 @@ class ObjectHandler(Node):
         self.current_position_y = 0.0
         self.current_angle = 0.0
 
+        self.handl = 0
         # Start the timer now
-        # self.start_time = self.get_clock().now()
+        self.start_time = self.get_clock().now()
         # time_period = 0.1
         # self.timer = self.create_timer(time_period, self.align_to_aruco)
 
@@ -94,7 +95,7 @@ class ObjectHandler(Node):
                 # self.right_aruco_position_x, self.right_aruco_position_y =  self.transform_cube_position(self.right_aruco.point.point)
 
     def handle_callback(self, msg: Int32):
-        self.handle = msg.data
+        self.handl = msg.data
     
     def odom_callback(self, msg: Odometry):
         self.current_position_x = msg.pose.pose.position.x
@@ -131,12 +132,12 @@ class ObjectHandler(Node):
         drop_off.data = 0.0
         pick_up.data = 70.0
 
-        if self.handle == '0':
+        if self.handl == '0':
             self.pick_or_drop_pub.publish(pick_up)
-        elif self.handle == '1':
+        elif self.handl == '1':
             self.pick_or_drop_pub.publish(drop_off)
 
-        self.pick_or_drop_pub.publish(pick_up)
+        self.aruco_handled.data = True
 
     ##############################
     # Velocity Control
@@ -208,7 +209,7 @@ class ObjectHandler(Node):
             self.output_velocity.linear.x = 0.1
             self.output_velocity.angular.z = 0.0
             self.cmd_vel_pub.publish(self.output_velocity)
-            time.sleep(1.8)
+            time.sleep(1.9)
 
             self.output_velocity.linear.x = 0.0
             self.output_velocity.angular.z = 0.0

@@ -39,7 +39,7 @@ class TrajectoryControl(Node):
         self.landmarks_pub = self.create_publisher(LandmarkList, '/landmarks', 1)
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
         self.handle_run_pub = self.create_publisher(Bool, '/handle_run', 1)
-        self.handle_pub = self.create_publisher(Int32, '/handle', 10)
+        self.handle_pub = self.create_publisher(Int32, '/handle', 1)
         
         # Inicialización de la pose y ángulo actual
         self.current_pose = PoseStamped()
@@ -86,7 +86,7 @@ class TrajectoryControl(Node):
         self.start_time = self.get_clock().now()
         self.timer = self.create_timer(0.1, self.run)
         self.arrived = None
-        self.carga = True
+        self.carga = False
 
         #Creación del diccionario de arucos
         self.station = Arucoinfo()
@@ -153,7 +153,7 @@ class TrajectoryControl(Node):
         self.get_logger().info(f"Pose to goal: {np.sqrt((self.goal.pose.position.x - self.current_pose.pose.position.x)**2 + (self.goal.pose.position.y - self.current_pose.pose.position.y)**2)}")
         self.get_logger().info(f"State: {self.current_state}")
         if self.current_state is StateMachine.FIND_LANDMARK:
-            if self.aruco_info.length < 0:
+            if self.aruco_info.length > 0:
                 stop_spin_msg = Twist()
                 self.velocity_pub.publish(stop_spin_msg)
                 self.current_state = StateMachine.WANDER
@@ -163,7 +163,7 @@ class TrajectoryControl(Node):
             else:
                 spin_msg = Twist()
                 spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
-                spin_msg.linear = 0
+                spin_msg.linear.x = 0
                 self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
@@ -186,7 +186,7 @@ class TrajectoryControl(Node):
                 if self.aruco_info.aruco_array[0].id == self.cube_id and self.aruco_info.aruco_array[0].point.point.z < 0.5:
                     stop_spin_msg = Twist()
                     self.velocity_pub.publish(stop_spin_msg)
-                    self.handle_pub.publish(Int32(data = 0))
+                    self.handle_pub.publish(Int32(data=0))
                     self.object_state = 'lifted'
                     self.current_state = StateMachine.HANDLE_OBJECT
                 # elif self.station_on_sight and self.station.point.point.z < 0.5:
@@ -223,10 +223,11 @@ class TrajectoryControl(Node):
                     self.current_state = StateMachine.STOP
                     self.object_state = ''
                 else: 
-                    self.handle_run_pub.publish(Bool(data = True))
+                    self.handle_run_pub.publish(Bool(data=True))
             else:
+                self.get_logger().info(f"Handle running trough pub")
                 self.handle_run_pub.publish(Bool(data = True))
-            pass
+                
 
         elif self.current_state is StateMachine.STOP:
             stop = Twist()
