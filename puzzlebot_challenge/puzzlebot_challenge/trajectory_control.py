@@ -187,6 +187,7 @@ class TrajectoryControl(Node):
                     stop_spin_msg = Twist()
                     self.velocity_pub.publish(stop_spin_msg)
                     self.handle_pub.publish(Int32(data = 0))
+                    self.object_state = 'lifted'
                     self.current_state = StateMachine.HANDLE_OBJECT
                 # elif self.station_on_sight and self.station.point.point.z < 0.5:
                 #     stop_spin_msg = Twist()
@@ -214,6 +215,7 @@ class TrajectoryControl(Node):
                     self.goal = self.convergence_point
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.GO_TO_TARGET
+                    self.carga = False
                 elif self.object_state == "dropped":
                     self.goal.pose.position.x = 0.0
                     self.goal.pose.position.y = 0.0
