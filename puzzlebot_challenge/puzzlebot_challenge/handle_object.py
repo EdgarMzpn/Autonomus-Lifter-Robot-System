@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import numpy as np
+import time
 from geometry_msgs.msg import Point, Pose, Twist
 from nav_msgs.msg import Odometry
 from puzzlebot_msgs.msg import ArucoArray, Arucoinfo
@@ -114,7 +115,6 @@ class ObjectHandler(Node):
         if not self.aligned:
             self.aligned = self.velocity_control()
         elif self.aligned:
-            self.handle = '0'
             self.handle_aruco()
 
         # self.get_logger().info(f'First Target: x={self.first_target_x} y={self.first_target_y} angle={self.first_target_angle}')
@@ -124,14 +124,18 @@ class ObjectHandler(Node):
 
     def handle_aruco(self):
         # Angles at which servo needs to turn to execute action
-        drop_off = 0.0
-        pick_up = 70.0
+        drop_off = Float32()
+        pick_up = Float32()
+
+        drop_off.data = 0.0
+        pick_up.data = 70.0
 
         if self.handle == '0':
             self.pick_or_drop_pub.publish(pick_up)
-            self.pick_or_drop_pub.publish(pick_up - 5)
         elif self.handle == '1':
             self.pick_or_drop_pub.publish(drop_off)
+
+        self.pick_or_drop_pub.publish(pick_up)
 
     ##############################
     # Velocity Control
@@ -200,15 +204,18 @@ class ObjectHandler(Node):
         # tolerance = 0.000000000000000
 
         if self.aruco_array.length == 0:
-            self.output_velocity.linear.x = 0.5
-            self.output_velocity.angular.z = 0.5
+            self.output_velocity.linear.x = 0.1
+            self.output_velocity.angular.z = 0.0
             self.cmd_vel_pub.publish(self.output_velocity)
+            time.sleep(1.8)
+
             self.output_velocity.linear.x = 0.0
             self.output_velocity.angular.z = 0.0
             self.cmd_vel_pub.publish(self.output_velocity)
-            return True
 
-        self.cmd_vel_pub.publish(self.output_velocity)
+            return True
+        else:
+            self.cmd_vel_pub.publish(self.output_velocity)
 
 def main(args=None):
     rclpy.init(args=args)
