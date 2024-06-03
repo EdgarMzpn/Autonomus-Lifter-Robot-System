@@ -134,7 +134,7 @@ class Localisation(Node):
                         [0.0, 0.01]])  # TODO: Change for equations from mapping
 
         G_k = np.array([    [-x_diff/np.sqrt(z_estimation[0][0]),     -y_diff/np.sqrt(z_estimation[0][0]),   0],
-                            [y_diff/z_estimation[0][0],                -x_diff/z_estimation[0][0],             0]])
+                            [y_diff/z_estimation[0][0],                -x_diff/z_estimation[0][0],             -1]])
         
         Z_linear = G_k.dot(self.sigma_estimation).dot(G_k.T) + R_k
 
