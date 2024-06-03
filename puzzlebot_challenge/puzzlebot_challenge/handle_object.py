@@ -47,8 +47,9 @@ class ObjectHandler(Node):
         self.integral = 0.0
 
         self.aruco_handled = Bool()
+        self.aruco_handled.data = False
         self.aligned = False
-        self.handle_instruction = 0
+        self.handle_instruction = Int32()
 
         # Aruco data
         self.aruco_array = ArucoArray()
@@ -70,12 +71,15 @@ class ObjectHandler(Node):
         self.current_position_y = 0.0
         self.current_angle = 0.0
 
+        self.start_time= self.get_clock().now()
+
     ##############################
     # Callback Functions
     ##############################
 
     def aruco_callback(self, msg: ArucoArray):
         self.aruco_array = msg
+
         if msg.length > 1:
             for index in range (0, msg.length):
                 # Aruco data
@@ -97,8 +101,8 @@ class ObjectHandler(Node):
                     if self.a_goal_init_offset == 0.0 and self.b_goal_init_offset == 0.0 and self.c_goal_init_offset == 0.0:
                         self.c_goal_init_offset = self.b_goal.offset
 
-    def handle_callback(self, msg: Int32):
-        self.handle_instruction = msg.data
+    def handle_callback(self, msg):
+        self.handle_instruction = msg
     
     def odom_callback(self, msg: Odometry):
         self.current_position_x = msg.pose.pose.position.x
@@ -115,10 +119,8 @@ class ObjectHandler(Node):
     def align_to_aruco(self, msg):
         if not self.aligned:
             self.aligned = self.velocity_control()
-        elif self.aligned:
+        elif self.aligned and not self.aruco_handled.data:
             self.handle_aruco()
-
-        self.handled_pub.publish(self.aruco_handled)
 
     def handle_aruco(self):
         drop_off = Float32()
@@ -128,12 +130,14 @@ class ObjectHandler(Node):
         drop_off.data = 0.0
         pick_up.data = 70.0
 
-        if self.handle_instruction == 0:
+        if self.handle_instruction.data == 0:
             self.pick_or_drop_pub.publish(pick_up)
-        elif self.handle_instruction == 1:
+        elif self.handle_instruction.data == 1:
             self.pick_or_drop_pub.publish(drop_off)
 
         self.aruco_handled.data = True
+        self.handled_pub.publish(self.aruco_handled)
+        self.aruco_handled.data = False
 
     ##############################
     # Velocity Control
@@ -162,20 +166,20 @@ class ObjectHandler(Node):
 
         offset_scaling = 0.001
 
-        if self.handle_instruction == 0:
+        if self.handle_instruction.data == 0:
             self.angle_error = self.left_aruco.offset * offset_scaling + self.right_aruco.offset * offset_scaling
-        elif self.handle_instruction == 1:
+        elif self.handle_instruction.data == 1:
             if self.a_goal_init_offset > 0.0:
-                self.angle_error = self.a_goal_init_offset - self.a_goal.offset
+                self.angle_error = self.a_goal_init_offset * offset_scaling - self.a_goal.offset * offset_scaling
             elif self.b_goal_init_offset > 0.0:
-                self.angle_error = self.b_goal_init_offset - self.b_goal.offset
+                self.angle_error = self.b_goal_init_offset * offset_scaling - self.b_goal.offset * offset_scaling
             elif self.c_goal_init_offset > 0.0:
-                self.angle_error = self.c_goal_init_offset - self.c_goal.offset
+                self.angle_error = self.c_goal_init_offset * offset_scaling - self.c_goal.offset * offset_scaling
 
         self.total_position_error = np.sqrt(x_error**2 + y_error**2)
 
     def velocity_control(self):
-        #Get time difference 
+        # Get time difference 
         self.current_time = self.start_time.to_msg()
         self.duration = self.get_clock().now() - self.start_time
 
@@ -191,10 +195,11 @@ class ObjectHandler(Node):
 
         self.output_velocity.linear.x = self.output_position
         self.output_velocity.angular.z = self.output_angle
+        self.get_logger().info(f'instruction_state: {self.handle_instruction.data}')
 
         # self.get_logger().info(f'Velocity Control: linear={self.output_velocity.linear.x} angular={self.output_velocity.angular.z}')
 
-        if self.handle_instruction == 0:
+        if self.handle_instruction.data == 0:
             if self.aruco_array.length == 0:
                 self.output_velocity.linear.x = 0.1
                 self.output_velocity.angular.z = 0.0
@@ -210,8 +215,8 @@ class ObjectHandler(Node):
             else:
                 self.cmd_vel_pub.publish(self.output_velocity)
 
-        elif self.handle_instruction == 1:
-            if (not len(self.a_goal.corners) > 0) and (not len(self.b_goal.corners) > 0) and (not len(self.c_goal.corners) > 0):
+        elif self.handle_instruction.data == 1:
+            if len(self.a_goal.corners) == 0 and len(self.b_goal.corners) == 0 and len(self.c_goal.corners) == 0:
                 self.output_velocity.linear.x = 0.0
                 self.output_velocity.angular.z = 0.0
                 self.cmd_vel_pub.publish(self.output_velocity)

@@ -93,10 +93,12 @@ class TrajectoryControl(Node):
         self.station_on_sight = False
 
         self.goal_ids = {
-            '1': 'A',
-            '13': 'B',
-            '3': 'C'
+            'A': '1',
+            'B': '13',
+            'C': '3'
         }
+
+        self.desired_goal = 'A'
 
         # Configurar las coordenadas de cada punto
         self.convergence_point = PoseStamped()
@@ -119,9 +121,8 @@ class TrajectoryControl(Node):
     def aruco_callback(self, msg):
         self.aruco_info = msg
         for aruco in self.aruco_info.aruco_array:
-            if aruco.id == '1':
-                self.station = aruco
-                break
+            if aruco.id == self.goal_ids[self.desired_goal] or aruco.id == self.cube_id:
+                self.aruco_info.aruco_array[0] = aruco
         
                 
     def lidar_callback(self, msg):
@@ -154,16 +155,21 @@ class TrajectoryControl(Node):
         self.get_logger().info(f"State: {self.current_state}")
         if self.current_state is StateMachine.FIND_LANDMARK:
             if self.aruco_info.length > 0:
-                stop_spin_msg = Twist()
-                self.velocity_pub.publish(stop_spin_msg)
-                self.current_state = StateMachine.WANDER
-                if self.object_state == 'lifted' and self.arrived:
+                self.get_logger().info(f"Condition: {self.aruco_info.aruco_array[0].id == self.goal_ids[self.desired_goal]}, aruco: {self.aruco_info.aruco_array[0].id}")
+                if self.aruco_info.aruco_array[0].id == self.cube_id:
+                    stop_spin_msg = Twist()
+                    self.velocity_pub.publish(stop_spin_msg)
+                    self.current_state = StateMachine.WANDER
+                elif self.object_state == 'lifted' and self.arrived and self.aruco_info.aruco_array[0].id == self.goal_ids[self.desired_goal]:
+                    stop_spin_msg = Twist()
+                    self.velocity_pub.publish(stop_spin_msg)
                     self.handle_pub.publish(Int32(data = 1))
+                    self.object_state = ''
                     self.current_state = StateMachine.HANDLE_OBJECT
             else:
                 spin_msg = Twist()
-                spin_msg.angular.z = 0.05  # Velocidad angular en radianes por segundo
-                spin_msg.linear.x = 0
+                spin_msg.angular.z = -0.05  # Velocidad angular en radianes por segundo
+                spin_msg.linear.x = 0.0
                 self.velocity_pub.publish(spin_msg)
 
         elif self.current_state is StateMachine.WANDER:
