@@ -121,6 +121,7 @@ class ObjectHandler(Node):
             self.aligned = self.velocity_control()
         elif self.aligned and not self.aruco_handled.data:
             self.handle_aruco()
+            self.aligned = False
 
     def handle_aruco(self):
         drop_off = Float32()
@@ -134,6 +135,22 @@ class ObjectHandler(Node):
             self.pick_or_drop_pub.publish(pick_up)
         elif self.handle_instruction.data == 1:
             self.pick_or_drop_pub.publish(drop_off)
+            self.get_logger().info(f'DROPPED')
+
+            # self.output_velocity.linear.x = -0.1
+            # self.output_velocity.angular.z = 0.0
+            # self.cmd_vel_pub.publish(self.output_velocity)
+            # time.sleep(0.5)
+
+            # self.output_velocity.linear.x = 0.0
+            # self.output_velocity.angular.z = 0.0
+            # self.cmd_vel_pub.publish(self.output_velocity)
+
+            self.go_backwards(0.1)
+            self.get_logger().info(f'GO_BACKWARDS')
+            time.sleep(0.5)
+            self.go_stop()
+            self.get_logger().info(f'STOPPED')
 
         self.aruco_handled.data = True
         self.handled_pub.publish(self.aruco_handled)
@@ -142,6 +159,27 @@ class ObjectHandler(Node):
     ##############################
     # Velocity Control
     ##############################
+
+    def go_fordward(self, speed):
+        self.output_velocity.linear.x = speed
+        self.output_velocity.angular.z = 0.0
+        self.cmd_vel_pub.publish(self.output_velocity)
+
+        return True
+    
+    def go_backwards(self, speed):
+        self.output_velocity.linear.x = -speed
+        self.output_velocity.angular.z = 0.0
+        self.cmd_vel_pub.publish(self.output_velocity)
+
+        return True
+    
+    def go_stop(self):
+        self.output_velocity.linear.x = 0.0
+        self.output_velocity.angular.z = 0.0
+        self.cmd_vel_pub.publish(self.output_velocity)
+
+        return True
 
     def PID(self, error, prev_error, kp, ki, kd):
         # Proportional term
@@ -201,14 +239,18 @@ class ObjectHandler(Node):
 
         if self.handle_instruction.data == 0:
             if self.aruco_array.length == 0:
-                self.output_velocity.linear.x = 0.1
-                self.output_velocity.angular.z = 0.0
-                self.cmd_vel_pub.publish(self.output_velocity)
-                time.sleep(1.9)
+                # self.output_velocity.linear.x = 0.1
+                # self.output_velocity.angular.z = 0.0
+                # self.cmd_vel_pub.publish(self.output_velocity)
+                # time.sleep(1.9)
 
-                self.output_velocity.linear.x = 0.0
-                self.output_velocity.angular.z = 0.0
-                self.cmd_vel_pub.publish(self.output_velocity)
+                # self.output_velocity.linear.x = 0.0
+                # self.output_velocity.angular.z = 0.0
+                # self.cmd_vel_pub.publish(self.output_velocity)
+
+                self.go_fordward(0.1)
+                time.sleep(1.8)
+                self.go_stop()
 
                 return True
             
@@ -216,10 +258,18 @@ class ObjectHandler(Node):
                 self.cmd_vel_pub.publish(self.output_velocity)
 
         elif self.handle_instruction.data == 1:
-            if len(self.a_goal.corners) == 0 and len(self.b_goal.corners) == 0 and len(self.c_goal.corners) == 0:
-                self.output_velocity.linear.x = 0.0
-                self.output_velocity.angular.z = 0.0
-                self.cmd_vel_pub.publish(self.output_velocity)
+            if self.aruco_array.length > 0:
+                for index in range(0, self.aruco_array.length):
+                    if self.aruco_array[index].id == '1':
+                # self.output_velocity.linear.x = 0.0
+                # self.output_velocity.angular.z = 0.0
+                # self.cmd_vel_pub.publish(self.output_velocity)
+                        self.get_logger().info(f'FOUND GOAL A')
+                        self.go_fordward(0.1)
+                        self.get_logger().info(f'FORWARD')
+                        time.sleep(0.5)
+                        self.go_stop()
+                        self.get_logger().info(f'STOPPED')
 
                 return True
             
