@@ -40,6 +40,7 @@ class TrajectoryControl(Node):
         self.bug_pub = self.create_publisher(Bool, '/bug2_run', 1)
         self.handle_run_pub = self.create_publisher(Bool, '/handle_run', 1)
         self.handle_pub = self.create_publisher(Int32, '/handle', 1)
+        self.aruco_goal_pub = self.create_publisher(String, '/aruco_goal', 1)
         
         # Inicialización de la pose y ángulo actual
         self.current_pose = PoseStamped()

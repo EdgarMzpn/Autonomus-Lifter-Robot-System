@@ -5,7 +5,7 @@ import time
 from geometry_msgs.msg import Point, Twist
 from nav_msgs.msg import Odometry
 from puzzlebot_msgs.msg import ArucoArray, Arucoinfo
-from std_msgs.msg import Int32, Float32, Bool
+from std_msgs.msg import Int32, Float32, Bool, String
 from tf_transformations import euler_from_quaternion
 
 class ObjectHandler(Node):
@@ -17,6 +17,7 @@ class ObjectHandler(Node):
         self.handle_sub = self.create_subscription(Int32, '/handle', self.handle_callback, 10)
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.handle_run_sub = self.create_subscription(Bool, '/handle_run', self.align_to_aruco, 1)
+        self.aruco_goal_sub = self.create_subscription(String, '/aruco_goal', self.aruco_goal_callback, 1)
 
         # Publishers
         self.handled_pub = self.create_publisher(Bool, '/handled_aruco', 1)
@@ -61,6 +62,8 @@ class ObjectHandler(Node):
         self.a_goal = Arucoinfo()
         self.b_goal = Arucoinfo()
         self.c_goal = Arucoinfo()
+        self.main_goal = ""
+        self.aruco_goal = Arucoinfo()
 
         self.a_goal_init_offset = 0.0
         self.b_goal_init_offset = 0.0
@@ -106,6 +109,14 @@ class ObjectHandler(Node):
         quaternion = msg.pose.pose.orientation
         self.current_angle = euler_from_quaternion([quaternion.x, quaternion.y, quaternion.z, quaternion.w])[2]
 
+    def aruco_goal_callback(self, msg):
+        self.main_goal = msg
+        if self.main_goal == "A":
+            self.aruco_goal = self.a_goal
+        elif self.main_goal == "B":
+            self.aruco_goal = self.b_goal
+        elif self.main_goal == "C":
+            self.aruco_goal = self.c_goal
     ##############################
     # Handling Object
     ##############################
@@ -228,7 +239,13 @@ class ObjectHandler(Node):
         elif self.handle_instruction.data == 1:
             if self.aruco_array.length > 0:
                 for index in range(0, self.aruco_array.length):
-                    if self.aruco_array.aruco_array[index].id == self.a_goal.id:
+                    if self.main_goal == "":
+                        self.aruco_goal = self.a_goal
+                        if self.aruco_array.aruco_array[index].id == self.aruco_goal.id:
+                            self.go_fordward(0.2)
+                            time.sleep(2.25)
+                            self.go_stop()
+                    if self.aruco_array.aruco_array[index].id == self.aruco_goal.id:
                         self.go_fordward(0.2)
                         time.sleep(2.25)
                         self.go_stop()
