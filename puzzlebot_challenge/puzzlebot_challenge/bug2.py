@@ -130,11 +130,11 @@ class Bug2Controller(Node):
         elif np.any((self.front_distance < 0.3)):
             self.cmd_vel.linear.x = 0.0
             self.cmd_vel.angular.z = -0.1
-        elif np.any((self.frontL_distance >= 0.25)):
+        elif np.any((self.frontL_distance >= 0.3)):
             self.cmd_vel.linear.x = 0.1
             self.cmd_vel.angular.z = 0.1
-        elif np.any((self.frontL_distance < 0.15)):
-            self.cmd_vel.linear.x = 0.1
+        elif np.any((self.frontL_distance < 0.25)):
+            self.cmd_vel.linear.x = 0.08
             self.cmd_vel.angular.z = -0.05
         else:
             self.cmd_vel.linear.x = 0.1

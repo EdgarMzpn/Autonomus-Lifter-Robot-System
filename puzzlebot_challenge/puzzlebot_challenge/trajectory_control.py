@@ -164,7 +164,7 @@ class TrajectoryControl(Node):
                     stop_spin_msg = Twist()
                     self.velocity_pub.publish(stop_spin_msg)
                     self.handle_pub.publish(Int32(data = 1))
-                    self.object_state = ''
+                    self.object_state = 'dropped'
                     self.current_state = StateMachine.HANDLE_OBJECT
             else:
                 spin_msg = Twist()
@@ -227,7 +227,6 @@ class TrajectoryControl(Node):
                     self.goal.pose.position.y = 0.0
                     self.goal_pub.publish(self.goal)
                     self.current_state = StateMachine.STOP
-                    self.object_state = ''
                 else: 
                     self.handle_run_pub.publish(Bool(data=True))
             else:

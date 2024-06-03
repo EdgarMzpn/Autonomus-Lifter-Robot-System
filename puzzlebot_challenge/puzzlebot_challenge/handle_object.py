@@ -111,6 +111,7 @@ class ObjectHandler(Node):
     ##############################
 
     def align_to_aruco(self, msg):
+        self.get_logger().info(f'Running')
         if not self.aligned:
             self.aligned = self.velocity_control()
         elif self.aligned and not self.aruco_handled.data:
@@ -130,7 +131,7 @@ class ObjectHandler(Node):
         elif self.handle_instruction.data == 1:
             self.pick_or_drop_pub.publish(drop_off)
             self.go_backwards(0.1)
-            time.sleep(0.5)
+            time.sleep(3)
             self.go_stop()
 
         self.aruco_handled.data = True
@@ -201,7 +202,7 @@ class ObjectHandler(Node):
         self.dt = self.duration.nanoseconds * 1e-9
 
         # Calculate resultant error
-        self.resultant_error(self.current_position_x + 0.1, self.current_position_y + 0.1)
+        self.resultant_error(self.current_position_x + 0.2, self.current_position_y + 0.2)
 
         # Adjust current pose
         self.output_position, self.prev_position_error = self.PID(self.total_position_error, self.prev_position_error, self.linear_kp, self.linear_ki, self.linear_kd)
@@ -211,7 +212,7 @@ class ObjectHandler(Node):
         self.output_velocity.angular.z = self.output_angle
         self.get_logger().info(f'instruction_state: {self.handle_instruction.data}')
 
-        # self.get_logger().info(f'Velocity Control: linear={self.output_velocity.linear.x} angular={self.output_velocity.angular.z}')
+        self.get_logger().info(f'Velocity Control: linear={self.output_velocity.linear.x} angular={self.output_velocity.angular.z}')
 
         if self.handle_instruction.data == 0:
             if self.aruco_array.length == 0:
@@ -227,9 +228,9 @@ class ObjectHandler(Node):
         elif self.handle_instruction.data == 1:
             if self.aruco_array.length > 0:
                 for index in range(0, self.aruco_array.length):
-                    if self.aruco_array[index].id == self.a_goal.id:
-                        self.go_fordward(0.1)
-                        time.sleep(0.5)
+                    if self.aruco_array.aruco_array[index].id == self.a_goal.id:
+                        self.go_fordward(0.2)
+                        time.sleep(2.25)
                         self.go_stop()
 
                 return True
