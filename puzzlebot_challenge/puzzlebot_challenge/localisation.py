@@ -28,8 +28,8 @@ class Localisation(Node):
         self.r = 0.06              # Radius of the Wheel
         
         # Constants for error model
-        self.kr = 0.5  #TODO Error coefficient for the right wheel
-        self.kl = 0.5  #TODO Error coefficient for the left wheel
+        self.kr = 0.00001  #TODO Error coefficient for the right wheel
+        self.kl = 0.00001  #TODO Error coefficient for the left wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
@@ -151,17 +151,10 @@ class Localisation(Node):
         self.sigma = (np.diag([1,1,1])-K_k.dot(G_k)).dot(self.sigma_estimation)
         
 
-        # Extend 3x3 matrix to 6x6 for ROS compatibility
-        sigma_full = np.zeros((6, 6))
-        sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
-        sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
-        sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
-        sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
-
         # self.get_logger().info("Estimation x: {}, y: {}".format(self.positionx, self.positiony))
         # self.get_logger().info("Real x: {}, y: {}".format(u_true[0], u_true[1]))
 
-        return sigma_full, u_true
+        return u_true
 
     def odom_reading(self):
 
@@ -185,15 +178,19 @@ class Localisation(Node):
 
         odom = Odometry()
 
-        # if len(self.landmark.landmarks) > 0:
+        if len(self.landmark.landmarks) > 0:
 
-        #     sigma_full, u_true = self.kalman_filter(previous_pose)
+            u_true = self.kalman_filter(previous_pose)
 
-        #     self.positionx = u_true[0][0]
-        #     self.positiony = u_true[1][0]
-        #     self.angle = u_true[2][0]
-        #     odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
-        
+            self.positionx = u_true[0][0]
+            self.positiony = u_true[1][0]
+            self.angle = u_true[2][0]
+
+        sigma_full = np.zeros((6, 6))
+        sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
+        sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
+        sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
+        sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
 
         # Publish odometry via odom topic
         odom.header.stamp = self.current_time
@@ -208,6 +205,7 @@ class Localisation(Node):
         odom.pose.pose.orientation.w = q[3]
         odom.twist.twist.linear.x = self.linear_speed
         odom.twist.twist.angular.z = self.angular_speed
+        odom.pose.covariance = sigma_full.flatten().tolist()  # Set the pose covariance matrix as a list
         self.odom_pub.publish(odom)
         # self.get_logger().info("Position y msg: {}".format(odom.pose.pose.position.y))
         self.start_time = self.get_clock().now()
