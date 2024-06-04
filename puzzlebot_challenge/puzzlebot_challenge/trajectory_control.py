@@ -103,8 +103,8 @@ class TrajectoryControl(Node):
 
         # Configurar las coordenadas de cada punto
         self.convergence_point = PoseStamped()
-        self.convergence_point.pose.position.x = 2.4
-        self.convergence_point.pose.position.y = 2.2
+        self.convergence_point.pose.position.x = 2.2
+        self.convergence_point.pose.position.y = 2.1
         self.convergence_point.pose.position.z = 0.0
         self.convergence_point.header.frame_id = 'world'
 
