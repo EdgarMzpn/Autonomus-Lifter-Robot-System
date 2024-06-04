@@ -25,17 +25,17 @@ class Localisation(Node):
         self.linear_speed = 0.0     # Linear Speed
         self.angular_speed = 0.0    # Angular Speed
         self.l = 0.17               # Wheelbase
-        self.r = 0.06              # Radius of the Wheel
+        self.r = 0.055              # Radius of the Wheel
         
         # Constants for error model
-        self.kr = 0.00001  #TODO Error coefficient for the right wheel
-        self.kl = 0.00001  #TODO Error coefficient for the left wheel
+        self.kr = 0.15  #TODO Error coefficient for the right wheel
+        self.kl = 0.13  #TODO Error coefficient for the left wheel
 
         # Starting pose for the puzzlebot
         self.angle = 0.0
         self.positionx = 0.0
         self.positiony = 0.0
-        self.landmark_true = {"1":[2.15, 3.21], "13": [3.14, 2.6065], "3": [3.14, 2.17]}
+        self.landmark_true = {"1":[2.15, 3.21], "8": [3.14, 2.6065], "3": [3.14, 2.17]}
 
         self.landmark = LandmarkList()
         self.landmark.landmarks = []
@@ -67,7 +67,7 @@ class Localisation(Node):
         self.landmark.landmarks = []
         if self.aruco_info.length != 0:
             for aruco in self.aruco_info.aruco_array:
-                if aruco.id != self.cube_id:
+                if aruco.id != self.cube_id or aruco.id == '30' or aruco.id == '31':
                     landmark = Landmark()
                     landmark.id = aruco.id
                     landmark.x, landmark.y = self.transform_cube_position(aruco.point.point)
@@ -174,9 +174,11 @@ class Localisation(Node):
         self.positionx += self.linear_speed * np.cos(self.angle) * self.dt
         self.positiony += self.linear_speed * np.sin(self.angle) * self.dt
 
-        #self.get_logger().info("Estimation x: {}, y: {}, theta: {}".format(self.positionx, self.positiony, self.angle))
+        self.get_logger().info("Estimation x: {}, y: {}, theta: {}".format(self.positionx, self.positiony, self.angle))
 
         odom = Odometry()
+        if not hasattr(self, 'sigma'):
+            self.sigma = np.eye(3)
 
         if len(self.landmark.landmarks) > 0:
 

@@ -95,7 +95,7 @@ class TrajectoryControl(Node):
 
         self.goal_ids = {
             'A': '1',
-            'B': '13',
+            'B': '8',
             'C': '3'
         }
 
@@ -104,7 +104,7 @@ class TrajectoryControl(Node):
         # Configurar las coordenadas de cada punto
         self.convergence_point = PoseStamped()
         self.convergence_point.pose.position.x = 2.4
-        self.convergence_point.pose.position.y = 1.9
+        self.convergence_point.pose.position.y = 2.2
         self.convergence_point.pose.position.z = 0.0
         self.convergence_point.header.frame_id = 'world'
 

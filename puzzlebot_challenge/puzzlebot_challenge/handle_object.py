@@ -17,7 +17,7 @@ class ObjectHandler(Node):
         self.handle_sub = self.create_subscription(Int32, '/handle', self.handle_callback, 10)
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.handle_run_sub = self.create_subscription(Bool, '/handle_run', self.align_to_aruco, 1)
-        self.aruco_goal_sub = self.create_subscription(String, '/aruco_goal', self.aruco_goal_callback, 1)
+        #self.aruco_goal_sub = self.create_subscription(String, '/aruco_goal', self.aruco_goal_callback, 1)
 
         # Publishers
         self.handled_pub = self.create_publisher(Bool, '/handled_aruco', 1)
@@ -62,8 +62,8 @@ class ObjectHandler(Node):
         self.a_goal = Arucoinfo()
         self.b_goal = Arucoinfo()
         self.c_goal = Arucoinfo()
-        self.main_goal = ""
-        self.aruco_goal = Arucoinfo()
+        #self.main_goal = ""
+        #self.aruco_goal = Arucoinfo()
 
         self.a_goal_init_offset = 0.0
         self.b_goal_init_offset = 0.0
@@ -109,23 +109,23 @@ class ObjectHandler(Node):
         quaternion = msg.pose.pose.orientation
         self.current_angle = euler_from_quaternion([quaternion.x, quaternion.y, quaternion.z, quaternion.w])[2]
 
-    def aruco_goal_callback(self, msg):
-        self.main_goal = msg
-        if self.main_goal == "A":
-            self.aruco_goal = self.a_goal
-        elif self.main_goal == "B":
-            self.aruco_goal = self.b_goal
-        elif self.main_goal == "C":
-            self.aruco_goal = self.c_goal
+    #def aruco_goal_callback(self, msg):
+    #    self.main_goal = msg
+    #    if self.main_goal == "A":
+    #        self.aruco_goal = self.a_goal
+    #    elif self.main_goal == "B":
+    #        self.aruco_goal = self.b_goal
+    #    elif self.main_goal == "C":
+    #        self.aruco_goal = self.c_goal
     ##############################
     # Handling Object
     ##############################
 
     def align_to_aruco(self, msg):
         self.get_logger().info(f'Running')
-        if not self.aligned:
+        if not self.aligned and self.handle_instruction.data == 0:
             self.aligned = self.velocity_control()
-        elif self.aligned and not self.aruco_handled.data:
+        elif (self.aligned and not self.aruco_handled.data) or self.handle_instruction.data == 1:
             self.handle_aruco()
             self.aligned = False
 
@@ -140,6 +140,9 @@ class ObjectHandler(Node):
         if self.handle_instruction.data == 0:
             self.pick_or_drop_pub.publish(pick_up)
         elif self.handle_instruction.data == 1:
+            self.go_fordward(0.1)
+            time.sleep(3)
+            self.go_stop()
             self.pick_or_drop_pub.publish(drop_off)
             self.go_backwards(0.1)
             time.sleep(3)
@@ -239,15 +242,9 @@ class ObjectHandler(Node):
         elif self.handle_instruction.data == 1:
             if self.aruco_array.length > 0:
                 for index in range(0, self.aruco_array.length):
-                    if self.main_goal == "":
-                        self.aruco_goal = self.a_goal
-                        if self.aruco_array.aruco_array[index].id == self.aruco_goal.id:
-                            self.go_fordward(0.2)
-                            time.sleep(2.25)
-                            self.go_stop()
-                    if self.aruco_array.aruco_array[index].id == self.aruco_goal.id:
-                        self.go_fordward(0.2)
-                        time.sleep(2.25)
+                    if self.aruco_array.aruco_array[index].id == self.a_goal.id:
+                        self.go_fordward(0.1)
+                        time.sleep(0.1)
                         self.go_stop()
 
                 return True
