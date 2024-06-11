@@ -92,20 +92,20 @@ class Localisation(Node):
         u_estimation = np.array([[self.positionx],[self.positiony],[self.angle]])
 
         # Define Jacobian matrix H_k
-        H_k = np.array([
-            [1, 0, -self.dt * self.linear_speed * np.sin(previous_pose["angle"])],
-            [0, 1, self.dt * self.linear_speed * np.cos(previous_pose["angle"])],
-            [0, 0, 1]
-        ])
+        # H_k = np.array([
+        #     [1, 0, -self.dt * self.linear_speed * np.sin(previous_pose["angle"])],
+        #     [0, 1, self.dt * self.linear_speed * np.cos(previous_pose["angle"])],
+        #     [0, 0, 1]
+        # ])
 
-        Gaussian = np.array([[self.kr * abs(self.wr),   0],
-                             [0,                        self.kl * abs(self.wl)]])
+        # Gaussian = np.array([[self.kr * abs(self.wr),   0],
+        #                      [0,                        self.kl * abs(self.wl)]])
 
-        Taylor = np.diag([1/2 * self.r * self.dt, 1/2 * self.r * self.dt, 1/2 * self.r * self.dt]).dot(np.array([[np.cos(previous_pose["angle"]), np.cos(previous_pose["angle"])],
-                                                                                                                [np.sin(previous_pose["angle"]), np.sin(previous_pose["angle"])],
-                                                                                                                [2/self.l, -2/self.l]]))
+        # Taylor = np.diag([1/2 * self.r * self.dt, 1/2 * self.r * self.dt, 1/2 * self.r * self.dt]).dot(np.array([[np.cos(previous_pose["angle"]), np.cos(previous_pose["angle"])],
+        #                                                                                                         [np.sin(previous_pose["angle"]), np.sin(previous_pose["angle"])],
+        #                                                                                                         [2/self.l, -2/self.l]]))
         
-        Q_k = Taylor.dot(Gaussian).dot(Taylor.T)
+        # Q_k = Taylor.dot(Gaussian).dot(Taylor.T)
         # Define the error matrix Q_k
         # Q_k = np.diag([self.kr * abs(self.wr) * self.dt, 
         #                self.kl * abs(self.wl) * self.dt, 
@@ -119,7 +119,7 @@ class Localisation(Node):
             self.sigma = np.eye(3)  # Initializes the covariance matrix if it hasn't been defined
 
         # Predict the new covariance matrix
-        self.sigma_estimation = H_k.dot(self.sigma).dot(H_k.T) + Q_k
+       
 
         # self.get_logger().info(f"Covariance Matrix:\n{self.sigma_estimation}")
         # self.get_logger().info("Matrix Q_k: {}".format(Q_k))
@@ -181,7 +181,24 @@ class Localisation(Node):
 
         odom = Odometry()
         if not hasattr(self, 'sigma'):
-            self.sigma = np.eye(3)
+            self.sigma = np.zeros((3,3))
+        # Define Jacobian matrix H_k
+        H_k = np.array([
+            [1, 0, -self.dt * self.linear_speed * np.sin(previous_pose["angle"])],
+            [0, 1, self.dt * self.linear_speed * np.cos(previous_pose["angle"])],
+            [0, 0, 1]
+        ])
+
+        Gaussian = np.array([[self.kr * abs(self.wr),   0],
+                             [0,                        self.kl * abs(self.wl)]])
+
+        Taylor = np.diag([1/2 * self.r * self.dt, 1/2 * self.r * self.dt, 1/2 * self.r * self.dt]).dot(np.array([[np.cos(previous_pose["angle"]), np.cos(previous_pose["angle"])],
+                                                                                                                [np.sin(previous_pose["angle"]), np.sin(previous_pose["angle"])],
+                                                                                                                [2/self.l, -2/self.l]]))
+        
+        Q_k = Taylor.dot(Gaussian).dot(Taylor.T)
+
+        self.sigma_estimation = H_k.dot(self.sigma).dot(H_k.T) + Q_k
 
         if len(self.landmark.landmarks) > 0:
 
@@ -190,12 +207,14 @@ class Localisation(Node):
             self.positionx = u_true[0][0]
             self.positiony = u_true[1][0]
             self.angle = u_true[2][0]
+        else: 
+            self.sigma = self.sigma_estimation
 
         sigma_full = np.zeros((6, 6))
         sigma_full[:3, :3] = self.sigma  # Fill in the 3x3 position covariance
-        sigma_full[3, 3] = 0.001  # Small value for orientation around x (roll)
-        sigma_full[4, 4] = 0.001  # Small value for orientation around y (pitch)
-        sigma_full[5, 5] = 0.001  # Small value for orientation around z (yaw)
+        sigma_full[3, 3] = 0.0001  # Small value for orientation around x (roll)
+        sigma_full[4, 4] = 0.0001  # Small value for orientation around y (pitch)
+        sigma_full[5, 5] = 0.0001  # Small value for orientation around z (yaw)
 
         # Publish odometry via odom topic
         odom.header.stamp = self.current_time
