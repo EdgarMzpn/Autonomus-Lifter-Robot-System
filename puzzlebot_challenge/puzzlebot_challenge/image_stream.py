@@ -20,7 +20,6 @@ class Image_stream(Node):
         ret, frame = self.cap.read()
         if ret:
             resized_frame = cv2.resize(frame, self.new_resolution)
-            # resized_frame = frame
             img_msg = self.bridge.cv2_to_imgmsg(resized_frame, encoding="bgr8")
             camera_info = CameraInfo()
             camera_info.header.stamp.sec = 1715820136
