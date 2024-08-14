@@ -9,7 +9,17 @@ from std_msgs.msg import Int32, Float32, Bool, String
 from tf_transformations import euler_from_quaternion
 
 class ObjectHandler(Node):
+    """
+    A ROS2 node that handles object manipulation based on ArUco marker detections.
+
+    This class subscribes to various topics to receive data from ArUco markers, odometry,
+    and handle instructions. It publishes commands to control the robot's velocity and 
+    servo angles for picking up or dropping off objects.
+    """
     def __init__(self):
+        """
+        Initialize the ObjectHandler node
+        """
         super().__init__('handle_object')
 
         # Subscribers
@@ -81,6 +91,12 @@ class ObjectHandler(Node):
     ##############################
 
     def aruco_callback(self, msg: ArucoArray):
+        """
+        Callback function for receiving ArUco marker data
+
+        Args:
+            msg (ArucoArray): The received ArUco marker array message.
+        """
         self.aruco_array = msg
 
         if msg.length > 1:
@@ -99,9 +115,21 @@ class ObjectHandler(Node):
                     self.c_goal = msg.aruco_array[index]
 
     def handle_callback(self, msg):
+        """
+        Callback function for receiving handle instructions
+
+        Args:
+            msg (Int32): The received handle instruction.
+        """
         self.handle_instruction = msg
     
     def odom_callback(self, msg: Odometry):
+        """
+        Callback function for receiving odometry data
+
+        Args:
+            msg (Odometry): The received odometry message containing position and orientation.
+        """
         self.current_position_x = msg.pose.pose.position.x
         self.current_position_y = msg.pose.pose.position.y
 
@@ -122,6 +150,12 @@ class ObjectHandler(Node):
     ##############################
 
     def align_to_aruco(self, msg):
+        """
+        Align the puzzlebot to the detected ArUco markers.
+
+        Args:
+            msg (Bool): A boolean indicating whether to start alignment.
+        """
         self.get_logger().info(f'Running')
         if not self.aligned and self.handle_instruction.data == 0:
             self.aligned = self.velocity_control()
@@ -130,6 +164,9 @@ class ObjectHandler(Node):
             self.aligned = False
 
     def handle_aruco(self):
+        """
+        Handle the object using the servo based on the current handle instruction.
+        """
         drop_off = Float32()
         pick_up = Float32()
 
@@ -156,7 +193,16 @@ class ObjectHandler(Node):
     # Velocity Control
     ##############################
 
-    def go_fordward(self, speed):
+    def go_forward(self, speed):
+        """
+        Move de robot forward at the specified speed
+
+        Args:
+            speed (float): The linear speed at which the robot should move forward.
+
+        Returns:
+            bool: True if the command was published correctly.
+        """
         self.output_velocity.linear.x = speed
         self.output_velocity.angular.z = 0.0
         self.cmd_vel_pub.publish(self.output_velocity)
@@ -164,6 +210,15 @@ class ObjectHandler(Node):
         return True
     
     def go_backwards(self, speed):
+        """
+        Move the robot backward at the specified speed
+
+        Args:
+            speed (float): The linear speed at which the robot should move backward.
+
+        Returns:
+            bool: True if the command was published correctly.
+        """
         self.output_velocity.linear.x = -speed
         self.output_velocity.angular.z = 0.0
         self.cmd_vel_pub.publish(self.output_velocity)
@@ -171,6 +226,12 @@ class ObjectHandler(Node):
         return True
     
     def go_stop(self):
+        """
+        Stop the robot's movement.
+
+        Returns:
+            bool: True if the stop command was published successfully.
+        """
         self.output_velocity.linear.x = 0.0
         self.output_velocity.angular.z = 0.0
         self.cmd_vel_pub.publish(self.output_velocity)
@@ -178,6 +239,19 @@ class ObjectHandler(Node):
         return True
 
     def PID(self, error, prev_error, kp, ki, kd):
+        """
+        Compute the PID control output.
+
+        Args:
+            error (float): The current error value.
+            prev_error (float): The previous error value.
+            kp (float): The proportional gain.
+            ki (float): The integral gain.
+            kd (float): The derivative gain.
+
+        Returns:
+            tuple: A tuple containing the output and the current error.
+        """
         # Proportional term
         P = kp * error
         
@@ -195,6 +269,13 @@ class ObjectHandler(Node):
         return output, error
 
     def resultant_error(self, desired_position_x, desired_position_y):
+        """
+        Calculate the resultant error between the desired positions.
+
+        Args:
+            desired_position_x (float): The desired x-coordinate.
+            desired_position_y (float): The desired y-coordinate.
+        """
         x_error = desired_position_x - self.current_position_x
         y_error = desired_position_y - self.current_position_y
 
@@ -208,6 +289,12 @@ class ObjectHandler(Node):
         self.total_position_error = np.sqrt(x_error**2 + y_error**2)
 
     def velocity_control(self):
+        """
+        Control the robot's velocity to align it with the desired position.
+
+        Returns:
+            bool: True if the robot is aligned, False otherwise.
+        """
         # Get time difference 
         self.current_time = self.start_time.to_msg()
         self.duration = self.get_clock().now() - self.start_time
