@@ -27,18 +27,16 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'puzzlebot_kinematics = puzzlebot_challenge.pose_sim:main',
             'odometry = puzzlebot_challenge.localisation:main',
             'joint_state_publisher = puzzlebot_challenge.JointStatePublisher:main',
-            'velocity_control = puzzlebot_challenge.velocity_control:main',
             'image_stream = puzzlebot_challenge.image_stream:main',
             'aruco = puzzlebot_challenge.aruco_identification:main',
             'pose_sim = puzzlebot_challenge.pose_sim:main',
-            'trajectory_control = puzzlebot_challenge.trajectory_control:main',
-            'obstacule_sim=puzzlebot_challenge.obstacule_sim:main',
+            'robot_control = puzzlebot_challenge.robot_control:main',
             'rplidar = puzzlebot_challenge.filter_scan:main',
-            'oval_pose = puzzlebot_challenge.oval_pose_publisher:main',
             'tf_broadcaster = puzzlebot_challenge.tf_broadcaster:main',
+            'bug2 = puzzlebot_challenge.bug2:main',
+            'handle_object = puzzlebot_challenge.handle_object:main',
         ],
     },
 )

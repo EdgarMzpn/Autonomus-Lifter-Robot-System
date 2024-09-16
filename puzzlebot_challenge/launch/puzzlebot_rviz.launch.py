@@ -36,11 +36,6 @@ def generate_launch_description():
             name='puzzlebot_kinematics'
     )
 
-    localisation = Node(
-            package = 'puzzlebot_challenge',
-            executable = 'odometry',
-            name = 'localisation'
-    )
 
     joint_state = Node(
             package='puzzlebot_challenge',
@@ -48,35 +43,48 @@ def generate_launch_description():
             name='joint_state_publisher'
     )
 
-    controller = Node(
-            package='puzzlebot_challenge',
-            executable='velocity_control',
-            name='velocity_control'
+    localisation = Node(
+            package = 'puzzlebot_challenge',
+            executable = 'odometry',
+            name = 'localisation'
     )
 
-    trayectory = Node(
+
+    control = Node(
         package='puzzlebot_challenge',
-        executable='trajectory_control',
-        name='trajectory_control'
+        executable='robot_control',
+        name='robot_control'
     )
 
-    simlulation = Node(
+    aruco = Node(
         package='puzzlebot_challenge',
-        executable='obstacule_sim',
-        name='obstacule_sim'
+        executable='aruco',
+        name='aruco'
+    )
+    
+    bug2 = Node(
+        package='puzzlebot_challenge',
+        executable='bug2',
+        name='Bug2'
     )
 
+    handle = Node(
+        package='puzzlebot_challenge',
+        executable='handle_object',
+        name='handle_object'
+    )
 
     return LaunchDescription([
-        robot_state_publisher_node,
-        rviz_node,
-        tf2_ros,
-        pose_sim, 
+        # robot_state_publisher_node,
+        # rviz_node,
+        # tf2_ros,
+        # pose_sim, 
+        # joint_state, 
         localisation,
-        joint_state, 
-        controller
-        #trayectory,
-        #simlulation
+        control,
+        bug2,
+        aruco,
+        handle
     ])
 
 if __name__ == '__main__':
